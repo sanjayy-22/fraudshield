@@ -1,0 +1,92 @@
+{
+  "booking_id": "B020976",
+  "shipper_id": "S0176",
+  "cohort": "sme",
+  "p_fraud": 0.9998,
+  "threshold": 0.001,
+  "history_bookings": 16,
+  "attributions": [
+    {
+      "feature": "log_pay_age_min",
+      "label": "payment instrument age",
+      "value": 3.1654750481410856,
+      "display": "0.4 h old",
+      "contribution": 4.354794797582569
+    },
+    {
+      "feature": "drift_score",
+      "label": "behavioural drift vs own history",
+      "value": 6.911700032572661,
+      "display": "6.9 (typical \u2248 4)",
+      "contribution": 3.050316342168535
+    },
+    {
+      "feature": "dev_shared_n",
+      "label": "other shippers on this device (30 d)",
+      "value": 4.0,
+      "display": "4",
+      "contribution": 2.844258332388019
+    },
+    {
+      "feature": "dest_fraud",
+      "label": "confirmed-fraud shipments to this address",
+      "value": 1.0,
+      "display": "1",
+      "contribution": 1.594845552721228
+    },
+    {
+      "feature": "dest_fanin_all",
+      "label": "dest_fanin_all",
+      "value": 2.0,
+      "display": "2.00",
+      "contribution": 1.5843502620490528
+    },
+    {
+      "feature": "vel24_ratio",
+      "label": "24 h booking velocity vs baseline",
+      "value": 7.202520898341291,
+      "display": "7.2\u00d7 the usual daily rate",
+      "contribution": 1.4073247593697322
+    }
+  ],
+  "rule_hits": [
+    {
+      "code": "R05_SHARED_FRAUD_DEVICE",
+      "text": "device previously used on confirmed-fraud bookings, new to this shipper"
+    }
+  ],
+  "graph": {
+    "dest_other_shippers_30d": 2,
+    "dest_confirmed_fraud": 1,
+    "device_other_shippers": 4,
+    "device_confirmed_fraud": 2,
+    "payment_other_shippers": 1,
+    "payment_confirmed_fraud": 0
+  },
+  "counterfactual": [
+    {
+      "feature": "log_pay_age_min",
+      "set_to": 13.0,
+      "p_after": 0.9997165824835259,
+      "clears_threshold": false
+    },
+    {
+      "feature": "drift_score",
+      "set_to": 4.0,
+      "p_after": 0.9036258317951683,
+      "clears_threshold": false
+    },
+    {
+      "feature": "dev_shared_n",
+      "set_to": 0.0,
+      "p_after": 0.9996744022826737,
+      "clears_threshold": false
+    },
+    {
+      "feature": "dest_fraud",
+      "set_to": 0.0,
+      "p_after": 0.999770255394135,
+      "clears_threshold": false
+    }
+  ]
+}

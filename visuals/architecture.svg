@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1010" width="1500" height="1010" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+<style>
+  :root { --bg:#fcfcfb; --lane:#f0efec; --side:#e8eef8; --box:#ffffff; --stroke:#c9c8c3; --ink:#0b0b0b; --ink2:#52514e; --arrow:#8a8984;
+           --allow:#0ca30c; --step:#2a78d6; --hold:#eda100; --block:#d03b3b; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#1a1a19; --lane:#262624; --side:#22303f; --box:#2f2f2d; --stroke:#4a4946; --ink:#ffffff; --ink2:#c3c2b7; --arrow:#8f8e86; } }
+  .bg { fill:var(--bg); } .lane { fill:var(--lane); } .side { fill:var(--side); }
+  .box { fill:var(--box); stroke:var(--stroke); stroke-width:1; }
+  .lbl { font-size:13px; font-weight:600; fill:var(--ink); } .sub { font-size:11px; fill:var(--ink2); }
+  .lane-title { font-size:12px; font-weight:700; letter-spacing:.04em; fill:var(--ink2); }
+  .item { font-size:12px; fill:var(--ink); } .note { font-size:12px; fill:var(--ink2); }
+  .arrow { stroke:var(--arrow); stroke-width:1.5; } .dash { stroke:var(--arrow); stroke-width:1.5; fill:none; stroke-dasharray:6 5; }
+  .act-allow { fill:var(--allow); stroke:none; } .act-step { fill:var(--step); stroke:none; } .act-hold { fill:var(--hold); stroke:none; } .act-block { fill:var(--block); stroke:none; }
+  .act .lbl, .act .sub { fill:#fff; }
+</style>
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--arrow)"/></marker></defs>
+<rect class="bg" width="1500" height="1010"/>
+<text class="lbl" x="20" y="976" font-size="15">FraudShield — booking-time fraud detection pipeline (target architecture)</text>
+<rect class="lane" x="10" y="20" width="1090" height="78" rx="10"/>
+<text class="lane-title" x="20" y="36">1 · SOURCES</text>
+<rect class="box" x="30" y="44" width="200" height="44" rx="8"/>
+<text class="lbl" x="40" y="64">Booking API / UI</text>
+<text class="sub" x="40" y="82">sync scoring call</text>
+<rect class="box" x="242" y="44" width="200" height="44" rx="8"/>
+<text class="lbl" x="252" y="64">Account master (MDM)</text>
+<text class="sub" x="252" y="82">CDC stream</text>
+<rect class="box" x="454" y="44" width="200" height="44" rx="8"/>
+<text class="lbl" x="464" y="64">Payment gateway</text>
+<text class="sub" x="464" y="82">instrument events</text>
+<rect class="box" x="666" y="44" width="200" height="44" rx="8"/>
+<text class="lbl" x="676" y="64">Device / session telemetry</text>
+<text class="sub" x="676" y="82">fingerprint, IP, geo</text>
+<rect class="box" x="878" y="44" width="202" height="44" rx="8"/>
+<text class="lbl" x="888" y="64">Delivery &amp; case outcomes</text>
+<text class="sub" x="888" y="82">post-delivery fraud labels</text>
+<rect class="lane" x="10" y="118" width="1090" height="78" rx="10"/>
+<text class="lane-title" x="20" y="134">2 · INGESTION</text>
+<rect class="box" x="30" y="142" width="640" height="44" rx="8"/>
+<text class="lbl" x="40" y="162">Kafka topics: booking.created · entity.updated · label.confirmed</text>
+<text class="sub" x="40" y="180">schema registry · partitioned by shipper_id · idempotent consumers</text>
+<rect class="box" x="682" y="142" width="398" height="44" rx="8"/>
+<text class="lbl" x="692" y="162">Sync REST/gRPC scoring endpoint</text>
+<text class="sub" x="692" y="180">SLA p99 &lt; 150 ms · fail-safe mode by value</text>
+<rect class="lane" x="10" y="216" width="1090" height="120" rx="10"/>
+<text class="lane-title" x="20" y="232">3 · FEATURE PLATFORM (point-in-time correct, one definition online + offline)</text>
+<rect class="box" x="30" y="240" width="255" height="44" rx="8"/>
+<text class="lbl" x="40" y="260">Shipper behavioural profile</text>
+<text class="sub" x="40" y="278">Bayesian per-shipper stats · cohort back-off</text>
+<rect class="box" x="297" y="240" width="190" height="44" rx="8"/>
+<text class="lbl" x="307" y="260">Velocity counters</text>
+<text class="sub" x="307" y="278">1 h / 24 h / 7 d vs baseline</text>
+<rect class="box" x="499" y="240" width="300" height="44" rx="8"/>
+<text class="lbl" x="509" y="260">Entity-graph counters</text>
+<text class="sub" x="509" y="278">fan-in per entity · capped components · fraud density</text>
+<rect class="box" x="811" y="240" width="269" height="44" rx="8"/>
+<text class="lbl" x="821" y="260">Identity &amp; account</text>
+<text class="sub" x="821" y="278">device / instrument novelty &amp; age, dormancy</text>
+<rect class="box" x="30" y="304" width="520" height="24" rx="8"/>
+<text class="lbl" x="40" y="324">Online store: Redis / Feast</text>
+<rect class="box" x="562" y="304" width="518" height="24" rx="8"/>
+<text class="lbl" x="572" y="324">Offline store: warehouse / Parquet · same feature code, replayed</text>
+<rect class="lane" x="10" y="356" width="1090" height="122" rx="10"/>
+<text class="lane-title" x="20" y="372">4 · DETECTION ENSEMBLE (parallel, &lt; 30 ms)</text>
+<rect class="box" x="30" y="380" width="240" height="44" rx="8"/>
+<text class="lbl" x="40" y="400">Rules engine</text>
+<text class="sub" x="40" y="418">versioned · reason codes · hard blocks</text>
+<rect class="box" x="282" y="380" width="255" height="44" rx="8"/>
+<text class="lbl" x="292" y="400">Supervised GBM</text>
+<text class="sub" x="292" y="418">LightGBM, all families · TreeSHAP attributions</text>
+<rect class="box" x="549" y="380" width="250" height="44" rx="8"/>
+<text class="lbl" x="559" y="400">Behavioural drift</text>
+<text class="sub" x="559" y="418">unsupervised deviation · label-free fallback</text>
+<rect class="box" x="811" y="380" width="269" height="44" rx="8"/>
+<text class="lbl" x="821" y="400">Entity-graph signals</text>
+<text class="sub" x="821" y="418">mule / ring detection · label propagation</text>
+<rect class="box" x="30" y="444" width="1050" height="24" rx="8"/>
+<text class="lbl" x="40" y="464">Calibration (Platt) → fraud probability p  ·  Mondrian conformal → prediction set {legit | fraud | both}</text>
+<rect class="lane" x="10" y="498" width="1090" height="86" rx="10"/>
+<text class="lane-title" x="20" y="514">5 · DECISION ENGINE</text>
+<rect class="box" x="30" y="522" width="730" height="44" rx="8"/>
+<text class="lbl" x="40" y="542">Expected-cost policy:  argmin { p·L,  (1−p)·C_block,  E[step-up],  E[hold] }</text>
+<text class="sub" x="40" y="560">inputs: p, charge, ops cost, customer LTV, analyst capacity, conformal ambiguity, hard rules · versioned</text>
+<g class="act"><rect class="act-allow" x="768" y="522" width="60" height="24" rx="8"/>
+<text class="lbl" x="778" y="542">ALLOW</text></g>
+<g class="act"><rect class="act-step" x="834" y="522" width="112" height="44" rx="8"/>
+<text class="lbl" x="844" y="542">STEP-UP</text>
+<text class="sub" x="844" y="560">OTP · call-back</text></g>
+<g class="act"><rect class="act-hold" x="952" y="522" width="66" height="44" rx="8"/>
+<text class="lbl" x="962" y="542">HOLD</text>
+<text class="sub" x="962" y="560">analyst</text></g>
+<g class="act"><rect class="act-block" x="1024" y="522" width="62" height="24" rx="8"/>
+<text class="lbl" x="1034" y="542">BLOCK</text></g>
+<rect class="lane" x="10" y="604" width="1090" height="78" rx="10"/>
+<text class="lane-title" x="20" y="620">6 · ACTIONS &amp; INTEGRATION</text>
+<rect class="box" x="30" y="628" width="240" height="44" rx="8"/>
+<text class="lbl" x="40" y="648">Booking system callback</text>
+<text class="sub" x="40" y="666">accept / hold / reject status</text>
+<rect class="box" x="282" y="628" width="240" height="44" rx="8"/>
+<text class="lbl" x="292" y="648">Verification workflow</text>
+<text class="sub" x="292" y="666">step-up outcome = instant label</text>
+<rect class="box" x="534" y="628" width="240" height="44" rx="8"/>
+<text class="lbl" x="544" y="648">Analyst case queue</text>
+<text class="sub" x="544" y="666">priority by expected loss</text>
+<rect class="box" x="786" y="628" width="294" height="44" rx="8"/>
+<text class="lbl" x="796" y="648">Ops workflow</text>
+<text class="sub" x="796" y="666">hold at pickup / first scan</text>
+<line class="arrow" x1="300" y1="98" x2="300" y2="118" marker-end="url(#ah)"/>
+<line class="arrow" x1="560" y1="98" x2="560" y2="118" marker-end="url(#ah)"/>
+<line class="arrow" x1="820" y1="98" x2="820" y2="118" marker-end="url(#ah)"/>
+<line class="arrow" x1="300" y1="196" x2="300" y2="216" marker-end="url(#ah)"/>
+<line class="arrow" x1="560" y1="196" x2="560" y2="216" marker-end="url(#ah)"/>
+<line class="arrow" x1="820" y1="196" x2="820" y2="216" marker-end="url(#ah)"/>
+<line class="arrow" x1="300" y1="336" x2="300" y2="356" marker-end="url(#ah)"/>
+<line class="arrow" x1="560" y1="336" x2="560" y2="356" marker-end="url(#ah)"/>
+<line class="arrow" x1="820" y1="336" x2="820" y2="356" marker-end="url(#ah)"/>
+<line class="arrow" x1="300" y1="478" x2="300" y2="498" marker-end="url(#ah)"/>
+<line class="arrow" x1="560" y1="478" x2="560" y2="498" marker-end="url(#ah)"/>
+<line class="arrow" x1="820" y1="478" x2="820" y2="498" marker-end="url(#ah)"/>
+<line class="arrow" x1="300" y1="584" x2="300" y2="604" marker-end="url(#ah)"/>
+<line class="arrow" x1="560" y1="584" x2="560" y2="604" marker-end="url(#ah)"/>
+<line class="arrow" x1="820" y1="584" x2="820" y2="604" marker-end="url(#ah)"/>
+<rect class="lane side" x="1130" y="20" width="350" height="300" rx="10"/>
+<text class="lane-title" x="1142" y="38">GENAI EXPLANATION SERVICE (async)</text>
+<text class="item" x="1144" y="60">• evidence pack: SHAP top-k · rule hits · graph facts</text>
+<text class="item" x="1144" y="76">   · drift stats · counterfactual</text>
+<text class="item" x="1144" y="98">• LLM narrates the pack only (analyst + customer</text>
+<text class="item" x="1144" y="114">   variants)</text>
+<text class="item" x="1144" y="136">• grounding verifier: every number / id must exist in</text>
+<text class="item" x="1144" y="152">   the pack, else reject</text>
+<text class="item" x="1144" y="174">• cached per decision id; never on the booking-time</text>
+<text class="item" x="1144" y="190">   path</text>
+<rect class="lane side" x="1130" y="340" width="350" height="200" rx="10"/>
+<text class="lane-title" x="1142" y="358">AUDIT &amp; COMPLIANCE</text>
+<text class="item" x="1144" y="380">• append-only hash-chained decision ledger: features,</text>
+<text class="item" x="1144" y="396">   versions, scores, action</text>
+<text class="item" x="1144" y="418">• deterministic replay of any decision</text>
+<text class="item" x="1144" y="440">• model registry (MLflow) · policy &amp; rule versions ·</text>
+<text class="item" x="1144" y="456">   PII minimisation</text>
+<rect class="lane side" x="1130" y="560" width="350" height="230" rx="10"/>
+<text class="lane-title" x="1142" y="578">FEEDBACK &amp; LEARNING</text>
+<text class="item" x="1144" y="600">• labels: step-up outcomes (hours) · analyst decisions</text>
+<text class="item" x="1144" y="616">   (hours) · post-delivery (days)</text>
+<text class="item" x="1144" y="638">• profile quarantine: unverified bookings never update</text>
+<text class="item" x="1144" y="654">   the baseline</text>
+<text class="item" x="1144" y="676">• drift monitoring (PSI) · scheduled retrain ·</text>
+<text class="item" x="1144" y="692">   champion / challenger shadow scoring</text>
+<text class="item" x="1144" y="714">• rule mining from confirmed cases → proposed rules</text>
+<text class="item" x="1144" y="730">   for analyst sign-off</text>
+<rect class="lane side" x="1130" y="810" width="350" height="150" rx="10"/>
+<text class="lane-title" x="1142" y="828">DASHBOARD</text>
+<text class="item" x="1144" y="850">• fraud attempts vs stopped · prevented loss ·</text>
+<text class="item" x="1144" y="866">   friction rate</text>
+<text class="item" x="1144" y="888">• action mix by cohort · review queue SLA · model &amp;</text>
+<text class="item" x="1144" y="904">   policy health · ring views</text>
+<path class="dash" d="M 1100 540 L 1130 160" marker-end="url(#ah)"/>
+<path class="dash" d="M 1100 560 L 1130 440" marker-end="url(#ah)"/>
+<path class="dash" d="M 1100 660 L 1130 660" marker-end="url(#ah)"/>
+<path class="dash" d="M 1130 700 C 1080 760, 900 760, 800 700 L 20 700 L 20 300 L 12 300" marker-end="url(#ah)"/>
+<text class="note" x="30" y="996">Synchronous booking path: lanes 2 → 3 → 4 → 5 → 6 (target p99 &lt; 150 ms end-to-end; prototype measures ~3 ms p99 for lanes 3–5 in one process). Everything on the right runs asynchronously.</text>
+</svg>

@@ -1,0 +1,600 @@
+{
+ "n_stream": 6518,
+ "n_fraud": 113,
+ "n_legit": 6405,
+ "fraud_at_risk": 126560,
+ "policies": [
+  {
+   "policy": "cost-sensitive (live)",
+   "realised cost \u20b9": 57802,
+   "fraud stopped": "107/113",
+   "fraud stopped %": 94.7,
+   "legit blocked": 19,
+   "legit blocked %": 0.3,
+   "legit asked to verify": 1,
+   "reviews": 0,
+   "ALLOW/STEP_UP/HOLD/BLOCK": "6391/5/0/122"
+  },
+  {
+   "policy": "fixed threshold @1% FPR",
+   "realised cost \u20b9": 566881,
+   "fraud stopped": "110/113",
+   "fraud stopped %": 97.3,
+   "legit blocked": 74,
+   "legit blocked %": 1.16,
+   "legit asked to verify": 0,
+   "reviews": 0,
+   "ALLOW/STEP_UP/HOLD/BLOCK": "6334/0/0/184"
+  },
+  {
+   "policy": "two-threshold + review band",
+   "realised cost \u20b9": 349803,
+   "fraud stopped": "110/113",
+   "fraud stopped %": 97.3,
+   "legit blocked": 44,
+   "legit blocked %": 0.69,
+   "legit asked to verify": 0,
+   "reviews": 96,
+   "ALLOW/STEP_UP/HOLD/BLOCK": "6269/0/96/153"
+  }
+ ],
+ "latency_ms": {
+  "p50": 3.2195,
+  "p95": 5.3645999999999985,
+  "p99": 6.44349,
+  "max": 13.347
+ },
+ "daily": [
+  {
+   "day": "2026-03-30",
+   "fraud": 0,
+   "stopped": 0,
+   "legit": 44,
+   "friction": 0
+  },
+  {
+   "day": "2026-03-31",
+   "fraud": 10,
+   "stopped": 9,
+   "legit": 157,
+   "friction": 0
+  },
+  {
+   "day": "2026-04-01",
+   "fraud": 5,
+   "stopped": 5,
+   "legit": 180,
+   "friction": 0
+  },
+  {
+   "day": "2026-04-02",
+   "fraud": 4,
+   "stopped": 4,
+   "legit": 157,
+   "friction": 0
+  },
+  {
+   "day": "2026-04-03",
+   "fraud": 3,
+   "stopped": 3,
+   "legit": 180,
+   "friction": 0
+  },
+  {
+   "day": "2026-04-04",
+   "fraud": 16,
+   "stopped": 16,
+   "legit": 205,
+   "friction": 0
+  },
+  {
+   "day": "2026-04-05",
+   "fraud": 2,
+   "stopped": 2,
+   "legit": 170,
+   "friction": 0
+  },
+  {
+   "day": "2026-04-06",
+   "fraud": 0,
+   "stopped": 0,
+   "legit": 191,
+   "friction": 0
+  },
+  {
+   "day": "2026-04-07",
+   "fraud": 8,
+   "stopped": 8,
+   "legit": 188,
+   "friction": 0
+  },
+  {
+   "day": "2026-04-08",
+   "fraud": 2,
+   "stopped": 2,
+   "legit": 188,
+   "friction": 0
+  },
+  {
+   "day": "2026-04-09",
+   "fraud": 2,
+   "stopped": 2,
+   "legit": 136,
+   "friction": 0
+  },
+  {
+   "day": "2026-04-10",
+   "fraud": 0,
+   "stopped": 0,
+   "legit": 207,
+   "friction": 0
+  },
+  {
+   "day": "2026-04-11",
+   "fraud": 3,
+   "stopped": 3,
+   "legit": 167,
+   "friction": 1
+  },
+  {
+   "day": "2026-04-12",
+   "fraud": 2,
+   "stopped": 1,
+   "legit": 206,
+   "friction": 0
+  },
+  {
+   "day": "2026-04-13",
+   "fraud": 2,
+   "stopped": 1,
+   "legit": 171,
+   "friction": 1
+  },
+  {
+   "day": "2026-04-14",
+   "fraud": 10,
+   "stopped": 10,
+   "legit": 177,
+   "friction": 0
+  },
+  {
+   "day": "2026-04-15",
+   "fraud": 1,
+   "stopped": 1,
+   "legit": 178,
+   "friction": 0
+  },
+  {
+   "day": "2026-04-16",
+   "fraud": 1,
+   "stopped": 1,
+   "legit": 187,
+   "friction": 1
+  },
+  {
+   "day": "2026-04-17",
+   "fraud": 0,
+   "stopped": 0,
+   "legit": 220,
+   "friction": 3
+  },
+  {
+   "day": "2026-04-18",
+   "fraud": 3,
+   "stopped": 2,
+   "legit": 185,
+   "friction": 1
+  },
+  {
+   "day": "2026-04-19",
+   "fraud": 0,
+   "stopped": 0,
+   "legit": 162,
+   "friction": 1
+  },
+  {
+   "day": "2026-04-20",
+   "fraud": 2,
+   "stopped": 2,
+   "legit": 199,
+   "friction": 1
+  },
+  {
+   "day": "2026-04-21",
+   "fraud": 0,
+   "stopped": 0,
+   "legit": 180,
+   "friction": 0
+  },
+  {
+   "day": "2026-04-22",
+   "fraud": 1,
+   "stopped": 1,
+   "legit": 180,
+   "friction": 1
+  },
+  {
+   "day": "2026-04-23",
+   "fraud": 11,
+   "stopped": 11,
+   "legit": 179,
+   "friction": 1
+  },
+  {
+   "day": "2026-04-24",
+   "fraud": 3,
+   "stopped": 3,
+   "legit": 152,
+   "friction": 1
+  },
+  {
+   "day": "2026-04-25",
+   "fraud": 0,
+   "stopped": 0,
+   "legit": 176,
+   "friction": 0
+  },
+  {
+   "day": "2026-04-26",
+   "fraud": 1,
+   "stopped": 1,
+   "legit": 214,
+   "friction": 1
+  },
+  {
+   "day": "2026-04-27",
+   "fraud": 4,
+   "stopped": 3,
+   "legit": 166,
+   "friction": 1
+  },
+  {
+   "day": "2026-04-28",
+   "fraud": 2,
+   "stopped": 1,
+   "legit": 210,
+   "friction": 2
+  },
+  {
+   "day": "2026-04-29",
+   "fraud": 6,
+   "stopped": 6,
+   "legit": 192,
+   "friction": 1
+  },
+  {
+   "day": "2026-04-30",
+   "fraud": 6,
+   "stopped": 6,
+   "legit": 186,
+   "friction": 1
+  },
+  {
+   "day": "2026-05-01",
+   "fraud": 2,
+   "stopped": 2,
+   "legit": 189,
+   "friction": 0
+  },
+  {
+   "day": "2026-05-02",
+   "fraud": 1,
+   "stopped": 1,
+   "legit": 192,
+   "friction": 1
+  },
+  {
+   "day": "2026-05-03",
+   "fraud": 0,
+   "stopped": 0,
+   "legit": 164,
+   "friction": 0
+  },
+  {
+   "day": "2026-05-04",
+   "fraud": 0,
+   "stopped": 0,
+   "legit": 170,
+   "friction": 1
+  }
+ ],
+ "actions_live": {
+  "ALLOW": 6391,
+  "STEP_UP": 5,
+  "HOLD": 0,
+  "BLOCK": 122
+ },
+ "actions_by_cohort": {
+  "individual": {
+   "ALLOW": 221,
+   "STEP_UP": 2,
+   "HOLD": 0,
+   "BLOCK": 20
+  },
+  "sme": {
+   "ALLOW": 1880,
+   "STEP_UP": 1,
+   "HOLD": 0,
+   "BLOCK": 65
+  },
+  "ecommerce": {
+   "ALLOW": 4290,
+   "STEP_UP": 2,
+   "HOLD": 0,
+   "BLOCK": 37
+  }
+ },
+ "scenario_recall": [
+  {
+   "scenario": "dormant_reactivation",
+   "stopped": 26,
+   "n": 27,
+   "recall": 0.96
+  },
+  {
+   "scenario": "geo_drift_heavy",
+   "stopped": 8,
+   "n": 8,
+   "recall": 1.0
+  },
+  {
+   "scenario": "off_hours_new_device",
+   "stopped": 7,
+   "n": 7,
+   "recall": 1.0
+  },
+  {
+   "scenario": "payment_swap",
+   "stopped": 16,
+   "n": 16,
+   "recall": 1.0
+  },
+  {
+   "scenario": "stealthy_mule",
+   "stopped": 11,
+   "n": 16,
+   "recall": 0.69
+  },
+  {
+   "scenario": "velocity_burst",
+   "stopped": 39,
+   "n": 39,
+   "recall": 1.0
+  }
+ ],
+ "ledger": {
+  "valid": true,
+  "records": 6518,
+  "tamper_detected": true,
+  "tamper_broke_at": 5,
+  "replay": {
+   "found": true,
+   "stored_p": 8.339325864943586e-11,
+   "replayed_p": 8.339325864943586e-11,
+   "same_model": true,
+   "reproduced": true
+  }
+ },
+ "sensitivity": [
+  {
+   "charge": "\u20b93,000",
+   "p": 0.02,
+   "individual": "ALLOW",
+   "sme": "ALLOW",
+   "ecommerce": "ALLOW"
+  },
+  {
+   "charge": "\u20b93,000",
+   "p": 0.1,
+   "individual": "HOLD",
+   "sme": "HOLD",
+   "ecommerce": "ALLOW"
+  },
+  {
+   "charge": "\u20b93,000",
+   "p": 0.3,
+   "individual": "HOLD",
+   "sme": "HOLD",
+   "ecommerce": "HOLD"
+  },
+  {
+   "charge": "\u20b93,000",
+   "p": 0.6,
+   "individual": "HOLD",
+   "sme": "HOLD",
+   "ecommerce": "HOLD"
+  },
+  {
+   "charge": "\u20b93,000",
+   "p": 0.9,
+   "individual": "BLOCK",
+   "sme": "HOLD",
+   "ecommerce": "HOLD"
+  },
+  {
+   "charge": "\u20b93,000",
+   "p": 0.99,
+   "individual": "BLOCK",
+   "sme": "BLOCK",
+   "ecommerce": "BLOCK"
+  },
+  {
+   "charge": "\u20b9300",
+   "p": 0.02,
+   "individual": "ALLOW",
+   "sme": "ALLOW",
+   "ecommerce": "ALLOW"
+  },
+  {
+   "charge": "\u20b9300",
+   "p": 0.1,
+   "individual": "STEP_UP",
+   "sme": "ALLOW",
+   "ecommerce": "ALLOW"
+  },
+  {
+   "charge": "\u20b9300",
+   "p": 0.3,
+   "individual": "STEP_UP",
+   "sme": "STEP_UP",
+   "ecommerce": "ALLOW"
+  },
+  {
+   "charge": "\u20b9300",
+   "p": 0.6,
+   "individual": "STEP_UP",
+   "sme": "STEP_UP",
+   "ecommerce": "ALLOW"
+  },
+  {
+   "charge": "\u20b9300",
+   "p": 0.9,
+   "individual": "BLOCK",
+   "sme": "STEP_UP",
+   "ecommerce": "STEP_UP"
+  },
+  {
+   "charge": "\u20b9300",
+   "p": 0.99,
+   "individual": "BLOCK",
+   "sme": "BLOCK",
+   "ecommerce": "STEP_UP"
+  }
+ ],
+ "training": {
+  "train": 10646,
+  "train_fraud": 84,
+  "calib": 2281,
+  "conformal": 2282,
+  "conformal_fraud": 40,
+  "model_version": "lightgbm-daf7f63190d7"
+ },
+ "thresholds": {
+  "fpr_0_5pct": 0.0001,
+  "fpr_1pct": 0.0,
+  "fpr_2pct": 0.0
+ },
+ "top_p": [
+  {
+   "booking_id": "B018591",
+   "p": 1.0,
+   "action": "BLOCK",
+   "fraud": 1,
+   "scenario": "payment_swap"
+  },
+  {
+   "booking_id": "B015606",
+   "p": 1.0,
+   "action": "BLOCK",
+   "fraud": 1,
+   "scenario": "payment_swap"
+  },
+  {
+   "booking_id": "B015967",
+   "p": 1.0,
+   "action": "BLOCK",
+   "fraud": 1,
+   "scenario": "payment_swap"
+  },
+  {
+   "booking_id": "B020817",
+   "p": 1.0,
+   "action": "BLOCK",
+   "fraud": 1,
+   "scenario": "dormant_reactivation"
+  },
+  {
+   "booking_id": "B020976",
+   "p": 1.0,
+   "action": "BLOCK",
+   "fraud": 1,
+   "scenario": "dormant_reactivation"
+  },
+  {
+   "booking_id": "B020767",
+   "p": 1.0,
+   "action": "BLOCK",
+   "fraud": 1,
+   "scenario": "dormant_reactivation"
+  },
+  {
+   "booking_id": "B016191",
+   "p": 1.0,
+   "action": "BLOCK",
+   "fraud": 1,
+   "scenario": "payment_swap"
+  },
+  {
+   "booking_id": "B020830",
+   "p": 1.0,
+   "action": "BLOCK",
+   "fraud": 1,
+   "scenario": "dormant_reactivation"
+  },
+  {
+   "booking_id": "B015749",
+   "p": 1.0,
+   "action": "BLOCK",
+   "fraud": 1,
+   "scenario": "payment_swap"
+  },
+  {
+   "booking_id": "B015770",
+   "p": 1.0,
+   "action": "BLOCK",
+   "fraud": 1,
+   "scenario": "geo_drift_heavy"
+  },
+  {
+   "booking_id": "B015539",
+   "p": 1.0,
+   "action": "BLOCK",
+   "fraud": 1,
+   "scenario": "payment_swap"
+  },
+  {
+   "booking_id": "B020652",
+   "p": 1.0,
+   "action": "BLOCK",
+   "fraud": 1,
+   "scenario": "dormant_reactivation"
+  },
+  {
+   "booking_id": "B020624",
+   "p": 1.0,
+   "action": "BLOCK",
+   "fraud": 1,
+   "scenario": "dormant_reactivation"
+  },
+  {
+   "booking_id": "B015605",
+   "p": 1.0,
+   "action": "BLOCK",
+   "fraud": 1,
+   "scenario": "payment_swap"
+  },
+  {
+   "booking_id": "B020751",
+   "p": 1.0,
+   "action": "BLOCK",
+   "fraud": 1,
+   "scenario": "dormant_reactivation"
+  }
+ ],
+ "samples": [
+  {
+   "label": "caught fraud (BLOCK)",
+   "booking_id": "B015253",
+   "narrative": "Booking B015253 by shipper S0059 (sme) has a calibrated fraud probability of 1.000; action taken: BLOCK. The shipper has 27 prior bookings on record. Main drivers \u2014 behavioural drift vs own history: 10.3 (typical \u2248 4); payment instrument age: 0.4 h old; other shippers on this device (30 d): 1; other shippers to this address (30 d): 1. Policy rules triggered: R01_NEW_PAY_NEW_DEST_EXPRESS (payment instrument added <60 min ago + never-seen destination + express/priority); R04_KNOWN_MULE_DEST (destination address linked to \u22652 confirmed fraud shipments); R05_SHARED_FRAUD_DEVICE (device previously used on confirmed-fraud bookings, new to this shipper); R07_OFFHOURS_NEW_DEVICE_NEW_DEST (booked 00:00\u201305:00 from a new device to a new destination). Linked infrastructure: destination address has 3 confirmed-fraud shipments, device 2, payment instrument 0.",
+   "customer": "We were unable to process booking B015253. Please contact support with this reference so we can assist you.",
+   "grounded": true
+  },
+  {
+   "label": "fraud sent to step-up",
+   "booking_id": "B015348",
+   "narrative": "Booking B015348 by shipper S0059 (sme) has a calibrated fraud probability of 0.539; action taken: STEP_UP. The shipper has 27 prior bookings on record. Main drivers \u2014 behavioural drift vs own history: 10.3 (typical \u2248 4); payment instrument age: 0.7 h old; destination novelty for this shipper: 10.7 nats; weight vs shipper's history: +0.8 \u03c3. Policy rules triggered: R01_NEW_PAY_NEW_DEST_EXPRESS (payment instrument added <60 min ago + never-seen destination + express/priority). It would score below threshold (0.000) if the behavioural drift vs own history were at this shipper's typical level \u2014 that is the first thing to verify with the account owner. The model's conformal prediction set is ambiguous, so human review is worth its cost here.",
+   "customer": "To protect your account, please confirm booking B015348 using the verification link we sent to your registered contact details. This takes under a minute.",
+   "grounded": true
+  }
+ ]
+}
