@@ -39,6 +39,8 @@ Cleaning steps
 """
 from __future__ import annotations
 
+import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -53,7 +55,8 @@ if sys.platform == "win32":
         pass
 
 # ─────────────────────────────────────────── paths
-RAW_PATH = Path(r"C:\Users\sanja\Downloads\DataCoSupplyChainDataset.csv")
+# Raw file location: --raw argument, else $DATACO_RAW, else ./DataCoSupplyChainDataset.csv
+RAW_PATH = Path(os.environ.get("DATACO_RAW", "DataCoSupplyChainDataset.csv"))
 OUT_DIR = Path(__file__).resolve().parent
 OUT_PATH = OUT_DIR / "cleaned_dataco.csv"
 
@@ -180,7 +183,12 @@ def clean(path: Path = RAW_PATH) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    df = clean()
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--raw", type=Path, default=RAW_PATH, help="path to DataCoSupplyChainDataset.csv")
+    ap.add_argument("--out", type=Path, default=OUT_PATH, help="where to write cleaned_dataco.csv")
+    args = ap.parse_args()
+    OUT_PATH = args.out
+    df = clean(args.raw)
     df.to_csv(OUT_PATH, index=False)
     print(f"\n✓ Saved cleaned dataset to {OUT_PATH}")
     print(f"  {len(df)} rows × {len(df.columns)} columns")

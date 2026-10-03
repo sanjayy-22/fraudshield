@@ -1,0 +1,53 @@
+{
+ "policies": {
+  "allow all": {
+   "cost_usd": 200026.21,
+   "fraud_stopped": 0,
+   "legit_blocked": 0,
+   "actions": {
+    "ALLOW": 13670
+   }
+  },
+  "rule: step-up every TRANSFER": {
+   "cost_usd": 122499.08,
+   "fraud_stopped": 242,
+   "legit_blocked": 97,
+   "actions": {
+    "ALLOW": 9886,
+    "STEP_UP": 3784
+   }
+  },
+  "fixed threshold @1% FPR": {
+   "cost_usd": 236817.49,
+   "fraud_stopped": 7,
+   "legit_blocked": 58,
+   "actions": {
+    "ALLOW": 13605,
+    "BLOCK": 65
+   }
+  },
+  "two-threshold + review band": {
+   "cost_usd": 211181.34,
+   "fraud_stopped": 11,
+   "legit_blocked": 23,
+   "actions": {
+    "ALLOW": 13534,
+    "BLOCK": 27,
+    "HOLD": 109
+   }
+  },
+  "cost-sensitive + conformal (live)": {
+   "cost_usd": 94735.79,
+   "fraud_stopped": 211,
+   "legit_blocked": 39,
+   "actions": {
+    "ALLOW": 10780,
+    "STEP_UP": 1527,
+    "HOLD": 1363
+   }
+  }
+ },
+ "fraud_at_risk_usd": 200026.21,
+ "n_fraud": 308,
+ "n_legit": 13362
+}
