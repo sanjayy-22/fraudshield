@@ -1,0 +1,12 @@
+export type Role = 'USER' | 'ADMIN';
+export type User = { id: string; name: string; email: string; phone: string; city: string; company: string; joined: string; role: Role };
+export type DeliveryStatus = 'Created' | 'Picked Up' | 'In Transit' | 'Distribution Center' | 'Out for Delivery' | 'Delivered' | 'Delayed';
+export type ReviewStatus = 'Under Review' | 'Suspicious' | 'On Hold' | 'Approved' | 'Blocked';
+export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type Contact = { country: string; name: string; phone: string; email: string; address: string; city: string; state: string; pin: string };
+export type ShipmentDraft = { sender: Contact; receiver: Contact; packaging: 'Box' | 'Envelope' | 'Custom'; length: number; width: number; height: number; weight: number; collection: 'Pickup' | 'Drop-off'; pickupAddress: string; pickupDate: string; pickupTime: string; instructions: string; dropoff: string; category: string; description: string; value: number; quantity: number; protection: 'Basic' | 'Additional'; declaredValue: number; payment: 'Card' | 'UPI' | 'Net Banking' | 'Wallet'; discount: boolean };
+export type Price = { shipping: number; pickup: number; protection: number; discount: number; total: number };
+export type Risk = { overall: number; level: RiskLevel; ruleScore: number; ruleMax: number; ai: number; factors: { name: string; points: number; description: string }[]; shap: { name: string; value: number }[]; model: string };
+export type Audit = { id: string; shipmentId: string; decision: ReviewStatus; admin: string; reason: string; notes: string; at: string };
+export type Shipment = { id: string; userId: string; created: string; expected: string; location: string; delivery: DeliveryStatus; status: ReviewStatus; draft: ShipmentDraft; price: Price; risk: Risk; audit: Audit[] };
+export type Notice = { id: string; userId: string; title: string; body: string; type: 'shipment' | 'delay' | 'verification' | 'payment' | 'reminder'; at: string; read: boolean; shipmentId?: string };

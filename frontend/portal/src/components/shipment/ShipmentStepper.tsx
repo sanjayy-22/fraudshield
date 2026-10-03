@@ -1,0 +1,3 @@
+import { Check } from 'lucide-react';
+export const steps = ['Shipping details', 'Packaging', 'Pickup / Drop-off', 'Package details', 'Protection', 'Payment', 'Review & confirm'];
+export function ShipmentStepper({ step, go }: { step: number; go: (n: number) => void }) { return <ol className="shipment-stepper" aria-label="Shipment steps">{steps.map((label, i) => <li key={label} className={i === step ? 'current' : i < step ? 'complete' : ''}><button type="button" disabled={i > step} onClick={() => go(i)} aria-current={step === i ? 'step' : undefined}><span>{i < step ? <Check size={15}/> : i + 1}</span><small>{label}</small></button></li>)}</ol>; }
