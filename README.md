@@ -38,8 +38,10 @@ python3 visuals/make_architecture.py
 # real data (DataCo): needs prototypes/data/cleaned_dataco.csv
 python3 -m pytest tests/ -q
 for e in experiments/e*-dataco-*/; do python3 $e/run.py; done
-python3 prototypes/fraudshield-pipeline/demo_dataco.py   # writes results_dataco.md, stats_dataco.json
+python3 prototypes/fraudshield-pipeline/demo_dataco.py   # writes results_dataco.md, stats_dataco.json, visuals/dashboard_dataco.html
 python3 visuals/make_dataco_charts.py
+cd prototypes/fraudshield-pipeline && uvicorn api_dataco:app --port 8081   # GET /dataco/orders/{id}, POST /dataco/score
+bash prototypes/fraudshield-pipeline/demo_requests.sh                       # scripted live demo (second terminal)
 cd prototypes/fraudshield-pipeline && uvicorn api:app --port 8080   # POST /score, GET /explain/{id}, POST /feedback
 ```
 
@@ -69,5 +71,5 @@ Reported separately: these are not comparable with the synthetic numbers above.
 | Why | every fraud order is TRANSFER; inside TRANSFER no feature, entity link or anomaly score separates fraud |
 | Pipeline replay | ledger verified, tamper detected, replay reproduced. The cost-sensitive policy is cheapest under stated, simulated cost assumptions, because of how it chooses actions rather than better ranking |
 
-Details: `notes/comparison-dataco.md`.
+Details: `notes/comparison-dataco.md`. Presentation outline and demo steps: `notes/presentation-outline.md`.
 
