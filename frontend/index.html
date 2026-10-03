@@ -29,14 +29,30 @@
 </header>
 
 <nav class="tabs" aria-label="Sections">
-  <button type="button" data-tab="new" aria-current="page">New order</button>
+  <button type="button" data-tab="tour" aria-current="page">Guided demo</button>
+  <button type="button" data-tab="new">New order</button>
   <button type="button" data-tab="mine">My orders <span class="count" id="count-mine">0</span></button>
   <button type="button" data-tab="review">Team review <span class="count" id="count-review">0</span></button>
 </nav>
 
 <main>
+  <!-- ======================================================= GUIDED DEMO -->
+  <section id="view-tour">
+    <div class="tour-intro">
+      <h2 class="page-title">Guided demo</h2>
+      <p class="lead">Six short chapters, each showing one part of the system with real orders. Every step says <b>who decided</b>:
+        the <b>ML model</b> (trained on 65,752 real orders), the <b>expert rules</b>, <b>a person</b> on the fraud team, or <b>the customer</b>.</p>
+      <div class="row-start">
+        <button type="button" class="btn primary big" id="tour-all">Run the whole demo</button>
+        <button type="button" class="btn ghost" id="tour-reset">Reset</button>
+      </div>
+      <p class="muted" id="tour-status">Reset starts again from a clean state: clock back to 1 Feb 2018 09:00, no orders, no known fraud.</p>
+    </div>
+    <ol class="chapters" id="chapters"></ol>
+  </section>
+
   <!-- ======================================================= NEW ORDER -->
-  <section id="view-new">
+  <section id="view-new" hidden>
     <section class="guide" aria-labelledby="guide-title">
       <h2 id="guide-title">What can happen to an order</h2>
       <ul class="outcomes">

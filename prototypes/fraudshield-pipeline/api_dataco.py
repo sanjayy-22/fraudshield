@@ -37,7 +37,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[0] / "data"))
 import dataco_features as F                       # noqa: E402
-from fraudshield import demo_scenarios, genai     # noqa: E402
+from fraudshield import demo_scenarios, genai, tour     # noqa: E402
 from fraudshield.bookings import THRESHOLDS, BookingDesk, BookingError   # noqa: E402
 from fraudshield.dataco import DataCoShield       # noqa: E402
 from fraudshield.decision import ReviewCapacity   # noqa: E402
@@ -50,14 +50,15 @@ REVIEWS_PER_4H = int(os.environ.get("FRAUDSHIELD_REVIEWS_PER_4H", "10"))
 app = FastAPI(title="FraudShield: DataCo booking desk", version="0.3.0")
 app.add_middleware(CORSMiddleware, allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
                    allow_methods=["*"], allow_headers=["*"])
-STATE: dict[str, Any] = {"shield": None, "orders": None, "desk": None, "model_source": None}
+STATE: dict[str, Any] = {"shield": None, "orders": None, "desk": None, "model_source": None, "items": None}
+EXPLAIN_CACHE: dict[tuple, dict] = {}
 
 LEAK_FIELDS = sorted(set(F.LEAK_COLS) | {"is_fraud", "late_delivery_risk", "days_for_shipping_real"})
 
 
-@app.on_event("startup")
-def _startup():
-    orders = F.cached_orders()
+def _build(orders=None) -> None:
+    """(Re)build the scoring desk: fresh clock, no bookings, empty fraud registries, new audit log."""
+    orders = orders if orders is not None else F.cached_orders()
     ledger = HERE / "ledger_dataco_api.jsonl"
     if ledger.exists():
         ledger.unlink()
@@ -67,10 +68,18 @@ def _startup():
     else:
         shield = DataCoShield(ledger_path=ledger, review_capacity=ReviewCapacity(REVIEWS_PER_4H, 4)).fit(orders)
         STATE["model_source"] = "trained at start-up (run train_dataco.py to save it)"
-    print(f"FraudShield model {shield.model.version}: {STATE['model_source']}; {REVIEWS_PER_4H} reviews per 4 h")
     STATE["shield"] = shield
     STATE["orders"] = orders.set_index("order_id")
-    STATE["desk"] = BookingDesk(shield, orders, F.load_items())
+    if STATE.get("items") is None:
+        STATE["items"] = F.load_items()
+    STATE["desk"] = BookingDesk(shield, orders, STATE["items"])
+    EXPLAIN_CACHE.clear()
+
+
+@app.on_event("startup")
+def _startup():
+    _build()
+    print(f"FraudShield model {STATE['shield'].model.version}: {STATE['model_source']}; {REVIEWS_PER_4H} reviews per 4 h")
 
 
 @app.get("/", include_in_schema=False)
@@ -321,8 +330,6 @@ def demo_prepare(key: str):
     return demo_scenarios.prepare(_desk(), key)
 
 
-EXPLAIN_CACHE: dict[tuple, dict] = {}
-
 
 @app.post("/dataco/bookings/{booking_id}/explain")
 def explain_booking(booking_id: str, refresh: bool = False):
@@ -331,4 +338,24 @@ def explain_booking(booking_id: str, refresh: bool = False):
     if refresh or key not in EXPLAIN_CACHE:
         EXPLAIN_CACHE[key] = genai.explain(b, THRESHOLDS, use_llm=os.environ.get("FRAUDSHIELD_LLM", "1") != "0")
     return EXPLAIN_CACHE[key]
+
+
+# ------------------------------------------------------------------ guided demo
+@app.get("/dataco/tour")
+def tour_list():
+    return tour.listing()
+
+
+@app.post("/dataco/tour/{key}")
+def tour_run(key: str):
+    if key not in tour.BY_KEY:
+        raise HTTPException(404, f"no demo chapter '{key}'")
+    return tour.run(_desk(), key)
+
+
+@app.post("/dataco/reset")
+def reset():
+    """Start the demo again: fresh clock, no bookings, empty fraud registries, new audit log."""
+    _build(STATE["orders"].reset_index())
+    return dict(ok=True, clock=str(STATE["desk"].now()))
 
