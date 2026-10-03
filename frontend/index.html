@@ -45,16 +45,34 @@
         <li class="oc review"><svg aria-hidden="true"><use href="#i-eye"/></svg><strong>Team review</strong><span>A person checks it before it ships.</span></li>
         <li class="oc stopped"><svg aria-hidden="true"><use href="#i-stop"/></svg><strong>Stopped</strong><span>Not shipped. You get a reference number.</span></li>
       </ul>
+      <details class="rules-guide" id="rules-guide">
+        <summary>The fraud rules and the limits we use</summary>
+        <div id="rules-guide-body"><p class="muted">Loading…</p></div>
+      </details>
     </section>
 
     <form id="order-form" novalidate>
-      <div class="examples">
-        <span>Try an example:</span>
-        <button type="button" class="chip" data-sample="regular">Card payment</button>
-        <button type="button" class="chip" data-sample="transfer">Bank transfer</button>
-        <button type="button" class="chip" data-sample="risky">Big discounted order</button>
-        <button type="button" class="chip" data-sample="new">New customer</button>
-      </div>
+      <section class="demos" aria-labelledby="demos-title">
+        <h2 id="demos-title">Try an example</h2>
+        <div class="demo-group">
+          <h3>Everyday orders</h3>
+          <div class="demo-buttons">
+            <button type="button" class="chip" data-sample="regular">Card payment</button>
+            <button type="button" class="chip" data-sample="transfer">Bank transfer</button>
+            <button type="button" class="chip" data-sample="risky">Big discounted order</button>
+            <button type="button" class="chip" data-sample="new">New customer</button>
+          </div>
+        </div>
+        <div class="demo-group">
+          <h3>Fraud demos: one rule</h3>
+          <div class="demo-buttons" id="demo-one"></div>
+        </div>
+        <div class="demo-group">
+          <h3>Fraud demos: rules together</h3>
+          <div class="demo-buttons" id="demo-combo"></div>
+        </div>
+      </section>
+      <div class="setup-note" id="setup-note" hidden></div>
 
       <section class="step">
         <h2><span class="num">1</span>Who is ordering?</h2>
@@ -110,6 +128,19 @@
         <h2><span class="num">4</span>How will they pay?</h2>
         <fieldset class="cards" id="pay-options"><legend class="sr">Payment method</legend></fieldset>
       </section>
+
+      <details class="step extra" id="extra">
+        <summary><h2><span class="num">5</span>Extra signals <small>(optional)</small></h2></summary>
+        <p class="help">The fraud rules look at these. Leave a box empty when there is nothing unusual: we then assume the customer's usual device, their usual payment method, a normal parcel and the current time.</p>
+        <div class="fields grid2">
+          <div class="field"><label for="sig-device">Device used</label><input id="sig-device" placeholder="e.g. PHONE-HOME"><p class="help">Phone or computer ID. A device new to this customer can be a warning sign.</p></div>
+          <div class="field"><label for="sig-address">Street address</label><input id="sig-address" placeholder="e.g. Calle 8 #45"><p class="help">Checked against addresses that received confirmed fraud.</p></div>
+          <div class="field"><label for="sig-payment">Payment method ID</label><input id="sig-payment" placeholder="e.g. CARD-NEW-4411"><p class="help">A card or account. New or fraud-linked methods are checked.</p></div>
+          <div class="field"><label for="sig-age">Payment method added (minutes ago)</label><input id="sig-age" type="number" min="0" placeholder="e.g. 20"><p class="help">Brand-new cards are riskier.</p></div>
+          <div class="field"><label for="sig-weight">Parcel weight (kg)</label><input id="sig-weight" type="number" min="0" step="0.1" placeholder="e.g. 1.2"><p class="help">Compared with what this customer usually sends.</p></div>
+          <div class="field"><label for="sig-time">Booking time (demo clock)</label><input id="sig-time" placeholder="e.g. 2018-02-02 02:00"><p class="help">Empty = now. The demo clock only moves forward.</p></div>
+        </div>
+      </details>
 
       <p class="error" id="form-error" role="alert" hidden></p>
       <button type="submit" class="btn primary big" id="submit-btn">Check &amp; place order</button>

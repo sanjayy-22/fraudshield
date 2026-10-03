@@ -53,6 +53,24 @@ python3 -m http.server 5173 --directory ../../frontend         # 3. frontend (te
 bash demo_requests.sh                                          #    optional: scripted API calls instead of the UI
 ```
 
+### Fraud rules, demo scenarios and AI explanations
+
+Every order gets an **overall risk**. It starts at the AI model's own fraud probability; each matched rule then adds
+its weight of the risk that is left (`new = old + (100% − old) × weight`). Decision: a hard rule (known fraud address
+or payment method) stops the order; otherwise **≥ 85% stop (fraud)**, **≥ 60% team review**, **≥ 30% verify**, and
+below 30% the model and cost policy decide. "Confirmed fraud" = an analyst rejected the order or verification failed
+3 times; its device, payment method and address then count as known fraud for later orders. The 8 shipment rules
+(`fraudshield/rules.py`) need the optional "Extra signals" on the form (device, payment method and its age, parcel
+weight, street address, booking time). Their weights are hand-set expert weights, not learned from DataCo.
+
+The **Fraud demos** buttons (`fraudshield/demo_scenarios.py`) set up one fresh demo customer per scenario: each of the
+8 rules alone, and 3 combinations (review by two medium rules, review by a takeover pattern, stop by three rules at
+92.8%). The UI shows what was set up, how the risk adds up, and the expected outcome.
+
+**AI explanation** (`fraudshield/genai.py`): OpenRouter writes a plain-language paragraph from a fixed fact pack;
+every number in it is checked against the facts, otherwise the standard explanation is shown. Put your key in a
+git-ignored `.env` (copy `.env.example`): `OPENROUTER_API_KEY=...`, `OPENROUTER_MODEL=qwen/qwen3.8-27b:free`.
+
 Example buttons on the form fill in orders that reach each outcome: a debit card order is confirmed with a
 tracking ID and label; a bank transfer from a returning customer goes to the analyst queue (approve → tracking ID,
 reject → blocked); a bulk discounted transfer asks for a one-time code (three wrong codes → blocked). The model

@@ -37,7 +37,8 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[0] / "data"))
 import dataco_features as F                       # noqa: E402
-from fraudshield.bookings import BookingDesk, BookingError   # noqa: E402
+from fraudshield import demo_scenarios, genai     # noqa: E402
+from fraudshield.bookings import THRESHOLDS, BookingDesk, BookingError   # noqa: E402
 from fraudshield.dataco import DataCoShield       # noqa: E402
 from fraudshield.decision import ReviewCapacity   # noqa: E402
 
@@ -190,9 +191,21 @@ class BookingLine(BaseModel):
     discount_rate: float = Field(0.0, ge=0, le=0.25)
 
 
+class Signals(BaseModel):
+    """Optional shipment signals the 8 shipment rules check. Blank = nothing unusual."""
+    model_config = ConfigDict(extra="forbid")
+    device_id: str | None = Field(None, max_length=60)
+    payment_id: str | None = Field(None, max_length=60)
+    payment_added_minutes_ago: float | None = Field(None, ge=0, le=10_000_000)
+    weight_kg: float | None = Field(None, gt=0, le=1000)
+    address: str | None = Field(None, max_length=200)
+
+
 class BookingForm(BaseModel):
     """What a customer fills in. Leave customer_id empty (or 0) for a new customer."""
     model_config = ConfigDict(extra="forbid")
+    signals: Signals | None = None
+    book_at: str | None = Field(None, max_length=40, description="demo: book at this dataset-clock time (moves the clock forward)")
     customer_id: int | None = None
     customer_segment: str | None = None
     customer_country: str | None = None
@@ -288,4 +301,34 @@ def review_booking(booking_id: str, body: ReviewBody):
         return _desk().review(booking_id, body.approve, body.note).public()
     except BookingError as e:
         raise HTTPException(409, str(e))
+
+
+# ------------------------------------------------------------------ rules, demo scenarios, AI explanations
+@app.get("/dataco/rules")
+def rules_guide():
+    return _desk().rules_guide()
+
+
+@app.get("/dataco/demo")
+def demo_list():
+    return demo_scenarios.listing()
+
+
+@app.post("/dataco/demo/{key}")
+def demo_prepare(key: str):
+    if key not in demo_scenarios.BY_KEY:
+        raise HTTPException(404, f"no demo scenario '{key}'")
+    return demo_scenarios.prepare(_desk(), key)
+
+
+EXPLAIN_CACHE: dict[tuple, dict] = {}
+
+
+@app.post("/dataco/bookings/{booking_id}/explain")
+def explain_booking(booking_id: str, refresh: bool = False):
+    b = _booking(booking_id)
+    key = (booking_id, b.status, b.confirmed_fraud)
+    if refresh or key not in EXPLAIN_CACHE:
+        EXPLAIN_CACHE[key] = genai.explain(b, THRESHOLDS, use_llm=os.environ.get("FRAUDSHIELD_LLM", "1") != "0")
+    return EXPLAIN_CACHE[key]
 

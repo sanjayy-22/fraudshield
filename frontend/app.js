@@ -12,10 +12,10 @@ const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
 
 // Each booking status, in the words and colours the guide at the top of the page uses.
 const OUTCOME = {
-  CONFIRMED:             { cls: "approved", icon: "i-check", title: "Order approved",       short: "Approved" },
-  VERIFICATION_REQUIRED: { cls: "verify",   icon: "i-key",   title: "Please verify",        short: "Verify" },
-  UNDER_REVIEW:          { cls: "review",   icon: "i-eye",   title: "Sent to team review",  short: "Team review" },
-  BLOCKED:               { cls: "stopped",  icon: "i-stop",  title: "Order stopped",        short: "Stopped" },
+  CONFIRMED:             { cls: "approved", icon: "i-check", title: "Order approved",      short: "Approved" },
+  VERIFICATION_REQUIRED: { cls: "verify",   icon: "i-key",   title: "Please verify",       short: "Verify" },
+  UNDER_REVIEW:          { cls: "review",   icon: "i-eye",   title: "Sent to team review", short: "Team review" },
+  BLOCKED:               { cls: "stopped",  icon: "i-stop",  title: "Order stopped",       short: "Stopped" },
 };
 const PAYMENT = {
   DEBIT: ["Card", "Debit card at checkout"], TRANSFER: ["Bank transfer", "Customer sends money from their bank"],
@@ -23,8 +23,10 @@ const PAYMENT = {
 };
 const SPEED = { "Same Day": "Today", "First Class": "Next day", "Second Class": "In 2 days", "Standard Class": "In 4 days" };
 const ACTION_WORDS = { ALLOW: "Approve", STEP_UP: "Ask to verify", HOLD: "Team review", BLOCK: "Stop" };
+const SIG_FIELDS = { device_id: "#sig-device", address: "#sig-address", payment_id: "#sig-payment",
+  payment_added_minutes_ago: "#sig-age", weight_kg: "#sig-weight" };
 
-let OPT = null;       // dropdown data from the server
+let OPT = null;       // dropdown data + thresholds from the server
 let shown = null;     // the order on screen
 
 // ------------------------------------------------------------------ server
@@ -59,8 +61,58 @@ async function start() {
     setConn(false); showError(e.message); setTimeout(start, 4000); return;
   }
   buildForm();
+  loadDemos();
+  loadRulesGuide();
   refreshLists();
   setInterval(() => api("/health").then(() => setConn(true), () => setConn(false)), 15000);
+}
+
+// ------------------------------------------------------------------ rules guide + demo buttons
+function badge(status, confirmed = false) {
+  const o = OUTCOME[status];
+  return `<span class="badge ${o.cls}">${esc(o.short)}${confirmed ? " · confirmed fraud" : ""}</span>`;
+}
+
+async function loadRulesGuide() {
+  try {
+    const g = await api("/dataco/rules");
+    const t = g.thresholds;
+    const rows = g.rules.map((r) => `<tr><td class="w">${pct(r.weight, 0)}</td><td><b>${esc(r.name)}</b>${r.hard ? '<span class="hard">always stops</span>' : ""}<br>${esc(r.plain)}</td></tr>`).join("");
+    $("#rules-guide-body").innerHTML = `
+      <p>Every order gets an <b>overall risk</b>. It starts at the AI model's own estimate. Each matched rule then adds its
+      percentage <i>of the risk that is left</i>, so the total never passes 100%.</p>
+      <table class="guide-table"><thead><tr><th>Overall risk</th><th>What happens</th></tr></thead><tbody>
+        <tr><td class="w">below ${pct(t.verify, 0)}</td><td>The AI model and a cost check decide (usually approved).</td></tr>
+        <tr><td class="w">${pct(t.verify, 0)}–${pct(t.review, 0)}</td><td>Verify: the customer types a one-time code.</td></tr>
+        <tr><td class="w">${pct(t.review, 0)}–${pct(t.stop, 0)}</td><td>Team review: a person checks it.</td></tr>
+        <tr><td class="w">${pct(t.stop, 0)} or more</td><td>Stopped: treated as fraud.</td></tr></tbody></table>
+      <div class="tablewrap"><table class="guide-table"><thead><tr><th>Weight</th><th>Rule</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="muted">The weights are set by fraud experts (they are not learned from this dataset). "Always stops" rules stop the order whatever the total.</p>`;
+  } catch { /* the guide is optional */ }
+}
+
+async function loadDemos() {
+  try {
+    const list = await api("/dataco/demo");
+    for (const [group, box] of [["one", "#demo-one"], ["combo", "#demo-combo"]]) {
+      $(box).innerHTML = list.filter((s) => s.group === group).map((s) =>
+        `<button type="button" class="demo-btn" data-demo="${esc(s.key)}" title="${esc(s.summary)}">${esc(s.title)} ${badge(s.expect)}</button>`).join("");
+    }
+    $$("[data-demo]").forEach((b) => b.addEventListener("click", () => demo(b.dataset.demo)));
+  } catch { /* demos are optional */ }
+}
+
+async function demo(key) {
+  try {
+    const d = await api(`/dataco/demo/${key}`, { method: "POST" });
+    fillForm(d.form);
+    const note = $("#setup-note");
+    note.innerHTML = `<h3>Demo set up: ${esc(d.title)}</h3><ul>${d.notes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>
+      <p class="muted">Expected result: ${badge(d.expect)}. Press <b>Check &amp; place order</b> below.</p>`;
+    note.hidden = false;
+    $("#extra").open = Object.keys(d.form.signals || {}).length > 0 || !!d.form.book_at;
+    note.scrollIntoView({ block: "start", behavior: "smooth" });
+  } catch (e) { showError(e.message); }
 }
 
 // ------------------------------------------------------------------ form
@@ -142,24 +194,42 @@ function totals() {
 
 function pick(name, value) { const el = $(`input[name="${name}"][value="${value}"]`); if (el) el.checked = true; }
 
-function sample(kind) {
+function clearSignals() {
+  Object.values(SIG_FIELDS).forEach((s) => { $(s).value = ""; });
+  $("#sig-time").value = "";
+}
+
+function fillForm(f) {
   $("#items").innerHTML = "";
-  if (kind === "new") {
+  if (f.customer_id) { $("#ctype-existing").checked = true; $("#customer_id").value = f.customer_id; }
+  else {
     $("#ctype-new").checked = true;
-    $("#customer_segment").value = "Consumer"; $("#customer_country").value = "Puerto Rico"; $("#customer_city").value = "Caguas";
-    $("#order_country").value = "Francia"; $("#order_city").value = "Paris"; pick("speed", "Same Day");
-    addItem(1004, 2, 0.2); pick("pay", "TRANSFER");
-  } else if (kind === "risky") {
-    $("#ctype-existing").checked = true; $("#customer_id").value = "16106";
-    $("#order_country").value = "Países Bajos"; $("#order_city").value = "Almelo"; pick("speed", "Second Class");
-    addItem(276, 3, 0); addItem(172, 5, 0.25); pick("pay", "TRANSFER");
-  } else {
-    $("#ctype-existing").checked = true; $("#customer_id").value = "12366";
-    $("#order_country").value = "El Salvador"; $("#order_city").value = "San Salvador"; pick("speed", "First Class");
-    addItem(957, 1, 0.05); addItem(365, 3, 0.1); pick("pay", kind === "transfer" ? "TRANSFER" : "DEBIT");
+    $("#customer_segment").value = f.customer_segment; $("#customer_country").value = f.customer_country; $("#customer_city").value = f.customer_city;
   }
+  $("#order_country").value = f.order_country; $("#order_city").value = f.order_city;
+  pick("speed", f.shipping_mode); pick("pay", f.payment_type);
+  f.items.forEach((i) => addItem(i.product_id, i.quantity, i.discount_rate));
+  clearSignals();
+  Object.entries(f.signals || {}).forEach(([k, v]) => { if (SIG_FIELDS[k]) $(SIG_FIELDS[k]).value = v; });
+  $("#sig-time").value = f.book_at ? String(f.book_at).slice(0, 16) : "";
   syncCustomer(); syncCountry(); hideError();
-  if (!$("#ctype-new").checked) findCustomer();
+  if (f.customer_id) findCustomer();
+}
+
+function sample(kind) {
+  $("#setup-note").hidden = true;
+  const base = { customer_id: 12366, order_country: "El Salvador", order_city: "San Salvador", shipping_mode: "First Class",
+    payment_type: "DEBIT", items: [{ product_id: 957, quantity: 1, discount_rate: 0.05 }, { product_id: 365, quantity: 3, discount_rate: 0.1 }] };
+  const forms = {
+    regular: base,
+    transfer: { ...base, payment_type: "TRANSFER" },
+    risky: { customer_id: 16106, order_country: "Países Bajos", order_city: "Almelo", shipping_mode: "Second Class", payment_type: "TRANSFER",
+      items: [{ product_id: 276, quantity: 3, discount_rate: 0 }, { product_id: 172, quantity: 5, discount_rate: 0.25 }] },
+    new: { customer_segment: "Consumer", customer_country: "Puerto Rico", customer_city: "Caguas", order_country: "Francia", order_city: "Paris",
+      shipping_mode: "Same Day", payment_type: "TRANSFER", items: [{ product_id: 1004, quantity: 2, discount_rate: 0.2 }] },
+  };
+  fillForm(forms[kind]);
+  $("#extra").open = false;
 }
 
 function readForm() {
@@ -173,6 +243,14 @@ function readForm() {
   if ($("#ctype-new").checked) {
     Object.assign(f, { customer_segment: $("#customer_segment").value, customer_country: $("#customer_country").value, customer_city: $("#customer_city").value.trim() });
   } else f.customer_id = Number($("#customer_id").value.trim());
+  const sig = {};
+  for (const [k, sel] of Object.entries(SIG_FIELDS)) {
+    const v = $(sel).value.trim();
+    if (v) sig[k] = ["payment_added_minutes_ago", "weight_kg"].includes(k) ? Number(v) : v;
+  }
+  if (Object.keys(sig).length) f.signals = sig;
+  const t = $("#sig-time").value.trim();
+  if (t) f.book_at = t;
   return f;
 }
 
@@ -182,6 +260,7 @@ function problem(f) {
   if (!OPT.countries.some((c) => c.country === f.order_country)) return "Step 2: pick a country from the list (names are in Spanish, e.g. Francia).";
   if (!f.order_city) return "Step 2: type the city.";
   if (f.items.some((i) => !(i.quantity >= 1 && i.quantity <= 5))) return "Step 3: each item can have 1 to 5 pieces.";
+  if (f.signals && f.signals.weight_kg !== undefined && !(f.signals.weight_kg > 0)) return "Step 5: parcel weight must be more than 0 kg.";
   return null;
 }
 
@@ -200,13 +279,17 @@ function review(ev) {
     const pr = OPT.products.find((x) => x.id === i.product_id);
     return `${i.quantity} × ${esc(pr.name)}${i.discount_rate ? ` (${Math.round(i.discount_rate * 100)}% off)` : ""}`;
   }).join("<br>");
+  const sig = f.signals || {};
+  const extra = [sig.device_id && `device ${esc(sig.device_id)}`, sig.payment_id && `payment ${esc(sig.payment_id)}${sig.payment_added_minutes_ago !== undefined ? ` (added ${sig.payment_added_minutes_ago} min ago)` : ""}`,
+    sig.weight_kg && `${sig.weight_kg} kg`, sig.address && esc(sig.address), f.book_at && `booked at ${esc(f.book_at)}`].filter(Boolean).join(" · ");
   $("#confirm-summary").innerHTML = `
     <dt>Customer</dt><dd>${f.customer_id ? "Number " + f.customer_id : "New customer from " + esc(f.customer_city)}</dd>
     <dt>Going to</dt><dd>${esc(f.order_city)}, ${esc(f.order_country)}</dd>
     <dt>Arrives</dt><dd>${esc(SPEED[f.shipping_mode])}</dd>
     <dt>Items</dt><dd>${items}</dd>
     <dt>Total</dt><dd>${$("#order-total").textContent}</dd>
-    <dt>Payment</dt><dd>${esc(PAYMENT[f.payment_type][0])}</dd>`;
+    <dt>Payment</dt><dd>${esc(PAYMENT[f.payment_type][0])}</dd>
+    ${extra ? `<dt>Extra signals</dt><dd>${extra}</dd>` : ""}`;
   $("#confirm").showModal();
 }
 
@@ -219,19 +302,6 @@ async function place() {
 }
 
 // ------------------------------------------------------------------ result screen
-function riskLevel(p) {
-  if (p < 0.02) return ["Low", "Under 2%. Most card orders are here."];
-  if (p < 0.1) return ["Medium", "2–10%. Typical for bank transfers, the only payment type with fraud in the data."];
-  return ["High", "10% or more. Higher than almost all past orders."];
-}
-
-function reasonText(r) {
-  if (r.feature === "is_transfer") return r.value ? "Paid by bank transfer" : "Not paid by bank transfer";
-  if (r.feature.startsWith("cust_new")) return r.value ? r.label.charAt(0).toUpperCase() + r.label.slice(1) : `Not the ${r.label}`;
-  const v = typeof r.value === "string" ? r.value : Number(r.value).toLocaleString("en-US", { maximumFractionDigits: 2 });
-  return `${r.label.charAt(0).toUpperCase() + r.label.slice(1)}: ${v}`;
-}
-
 function showOrder(b) {
   shown = b;
   const o = OUTCOME[b.status];
@@ -239,28 +309,32 @@ function showOrder(b) {
   $(".guide").hidden = true;
   const box = $("#result");
   box.hidden = false;
-  const [level, levelNote] = riskLevel(b.p_fraud);
-  const pos = Math.min(100, (b.p_fraud / 0.25) * 100);
+  const title = b.confirmed_fraud ? "Stopped · confirmed fraud" : o.title;
   box.innerHTML = `
     <article class="outcome ${o.cls}">
       <div class="outcome-head"><svg aria-hidden="true"><use href="#${o.icon}"/></svg>
-        <div><h2>${o.title}</h2><p class="order-no">Order ${esc(b.booking_id.replace("dataco-", "#"))} · ${usd(b.summary.net_total)} to ${esc(b.summary.order_city)}</p></div></div>
+        <div><h2>${title}</h2><p class="order-no">Order ${esc(b.booking_id.replace("dataco-", "#"))} · ${usd(b.summary.net_total)} to ${esc(b.summary.order_city)}</p></div></div>
       <p>${esc(b.message)}</p>
       ${nextStep(b)}
     </article>
 
-    <section class="panel">
-      <h3>Why did this happen?</h3>
-      <div>
-        <div class="risk-top"><span>Fraud risk</span><span><span class="risk-level">${level}</span> · ${pct(b.p_fraud)}</span></div>
-        <div class="meter" role="img" aria-label="Fraud risk ${pct(b.p_fraud)}, ${level}"><i style="left:${pos}%"></i></div>
-        <div class="scale" aria-hidden="true"><span style="left:4%">Low</span><span style="left:24%">Medium</span><span style="left:70%">High</span><span style="left:100%">25%</span></div>
-        <p class="muted">${esc(levelNote)}</p>
-      </div>
-      <p>${explainDecision(b)}</p>
-      ${b.reasons.length ? `<div><h3>What pushed the risk up</h3><ul class="reasons">${b.reasons.map((r) => `<li>${esc(reasonText(r))}</li>`).join("")}</ul></div>` : ""}
-      ${rulesBlock(b)}
+    <section class="ai" id="ai-box" aria-live="polite">
+      <div class="ai-head"><h3>In simple words</h3><span id="ai-badge"></span></div>
+      <p class="ai-text" id="ai-text"><span class="loading">Writing an explanation…</span></p>
+      <p class="ai-note" id="ai-note"></p>
+      <div class="row-start"><button type="button" class="btn ghost" id="ai-again">Write it again</button></div>
     </section>
+
+    <section class="panel">
+      <h3>How the risk adds up</h3>
+      ${addsUp(b)}
+      ${ruler(b)}
+      <p><b>Decision:</b> ${esc(cap(b.decided_by))}.</p>
+    </section>
+
+    ${b.reasons.length ? `<section class="panel"><h3>What the AI model noticed</h3>
+      <ul class="reasons">${b.reasons.map((r) => `<li>${esc(reasonText(r))}</li>`).join("")}</ul>
+      <p class="muted">These shaped the model's own ${pct(b.model_risk)} estimate, before the rules.</p></section>` : ""}
 
     <details class="expert"><summary>Details for experts</summary>${expert(b)}</details>
 
@@ -273,8 +347,59 @@ function showOrder(b) {
   const vf = $("#verify-form", box); if (vf) vf.addEventListener("submit", verify);
   const rv = $("#to-review", box); if (rv) rv.addEventListener("click", () => go("review"));
   const ck = $("#check-again", box); if (ck) ck.addEventListener("click", async () => showOrder(await api(`/dataco/bookings/${b.booking_id}`)));
+  $("#ai-again").addEventListener("click", () => explain(b, true));
+  explain(b, false);
   go("new");
   box.scrollIntoView({ block: "start", behavior: "smooth" });
+}
+
+async function explain(b, refresh) {
+  $("#ai-text").innerHTML = '<span class="loading">Writing an explanation…</span>';
+  $("#ai-badge").innerHTML = ""; $("#ai-note").textContent = "";
+  try {
+    const x = await api(`/dataco/bookings/${b.booking_id}/explain${refresh ? "?refresh=true" : ""}`, { method: "POST" });
+    if (!shown || shown.booking_id !== b.booking_id) return;
+    $("#ai-text").textContent = x.text;
+    $("#ai-badge").innerHTML = x.source === "ai"
+      ? '<span class="ai-badge">Written by AI · numbers checked</span>'
+      : '<span class="ai-badge template">Standard explanation</span>';
+    $("#ai-note").textContent = x.source === "ai" ? `Model: ${x.model}. Every number was checked against the facts on this page.`
+      : `AI explanation not used: ${x.note}.`;
+  } catch (e) { $("#ai-text").textContent = e.message; }
+}
+
+function addsUp(b) {
+  const steps = b.risk_steps || [];
+  const rows = steps.map((s, i) => {
+    if (i === 0) return `<li class="base"><span class="nm">Starting point: the AI model</span><span class="wt">${pct(s.after)}</span>
+      <span class="mn">The model's own fraud estimate from the order details and the customer's history.</span></li>`;
+    const h = b.rules_matched[i - 1];
+    return `<li><span class="nm">+ ${esc(h.name)}${h.hard ? '<span class="hard">always stops</span>' : ""}</span><span class="wt">${pct(h.weight, 0)}</span>
+      <span class="mn">${esc(h.plain)}</span>
+      <span class="bar" aria-hidden="true"><b style="width:${(h.before * 100).toFixed(1)}%"></b><i style="left:${(h.before * 100).toFixed(1)}%;width:${((h.after - h.before) * 100).toFixed(1)}%"></i></span>
+      <span class="ft">${pct(h.before)} + (100% − ${pct(h.before)}) × ${pct(h.weight, 0)} = <b>${pct(h.after)}</b></span></li>`;
+  }).join("");
+  const none = steps.length <= 1 ? `<p class="muted">No fraud rule matched this order.</p>` : "";
+  return `<ul class="adds">${rows}<li class="total"><span class="nm">Overall risk</span><span class="wt">${pct(b.overall_risk)}</span></li></ul>${none}
+    <p class="formula">Each rule adds its percentage of the risk that is left, so the total can never go over 100%.</p>`;
+}
+
+function ruler(b) {
+  const t = OPT.thresholds;
+  return `<div class="ruler" role="img" aria-label="Overall risk ${pct(b.overall_risk)} on the decision scale">
+      <span class="tick" style="left:${t.verify * 100}%">Verify ${pct(t.verify, 0)}</span>
+      <span class="tick" style="left:${t.review * 100}%">Review ${pct(t.review, 0)}</span>
+      <span class="tick" style="left:${t.stop * 100}%">Stop ${pct(t.stop, 0)}</span>
+      <span class="you" style="left:${Math.min(b.overall_risk * 100, 99.5)}%"></span></div>
+    <div class="ruler-legend"><span style="--c:var(--sky)">Model decides</span><span style="--c:var(--apricot)">Verify</span>
+      <span style="--c:#FFCBA0">Team review</span><span style="--c:var(--peach)">Stopped as fraud</span><span>▮ this order</span></div>`;
+}
+
+function reasonText(r) {
+  if (r.feature === "is_transfer") return r.value ? "Paid by bank transfer" : "Not paid by bank transfer";
+  if (r.feature.startsWith("cust_new")) return r.value ? cap(r.label) : `Not the ${r.label}`;
+  const v = typeof r.value === "string" ? r.value : Number(r.value).toLocaleString("en-US", { maximumFractionDigits: 2 });
+  return `${cap(r.label)}: ${v}`;
 }
 
 function nextStep(b) {
@@ -288,7 +413,7 @@ function nextStep(b) {
     return `<form id="verify-form" class="codebox"><label for="code" class="sr">6-digit code</label>
       <input id="code" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="one-time-code" required>
       <button class="btn primary" type="submit">Verify</button></form>
-      <p class="muted">${b.attempts_left} tr${b.attempts_left === 1 ? "y" : "ies"} left. Three wrong codes stop the order.</p>
+      <p class="muted">${b.attempts_left} tr${b.attempts_left === 1 ? "y" : "ies"} left. Three wrong codes stop the order as confirmed fraud.</p>
       ${b.demo_verification_code ? `<p class="demo">This is a demo, so no text message is sent. The code is <b>${esc(b.demo_verification_code)}</b></p>` : ""}`;
   }
   if (b.status === "UNDER_REVIEW") {
@@ -298,35 +423,26 @@ function nextStep(b) {
   return `<div><span class="muted">Reference number</span><div class="ref">${esc(b.reference)}</div></div>`;
 }
 
-function explainDecision(b) {
-  const a = b.decision.action, set = b.conformal.set;
-  if (a === "ALLOW") return "The risk is low enough, so the order ships without extra checks.";
-  if (a === "HOLD") return "The system <b>can't tell</b> if this order is safe or fraud, so a person checks it.";
-  if (a === "STEP_UP") return set.length === 1 && set[0] === "fraud"
-    ? "The order looks like past fraud cases, so we ask the customer to prove it's them. Most orders like this are still genuine."
-    : "Checking with the customer costs less than the risk, so we ask for a code.";
-  return "The risk is too high to ship.";
-}
-
-function rulesBlock(b) {
-  const rules = b.rules_detail || [];
-  if (!rules.length) return `<div><h3>Rules matched</h3><p class="muted">None.</p></div>`;
-  const combined = b.rule_score;
-  return `<div><h3>Rules matched</h3>
-    <ul class="rules">${rules.map((r) => `<li><span class="pct">${pct(r.score, 0)}</span><span>${esc(cap(r.text))}</span></li>`).join("")}</ul>
-    ${rules.length > 1 ? `<p class="muted">Together: ${pct(combined, 0)}.</p>` : ""}
-    <p class="muted">A rule's percentage is how suspicious it is on its own. Rules explain the decision; the risk score above decides it.</p></div>`;
-}
-
 function expert(b) {
   const costs = b.decision.expected_costs || {};
   const rows = ["ALLOW", "STEP_UP", "HOLD", "BLOCK"].filter((a) => a in costs).map((a) =>
-    `<tr class="${a === b.decision.action ? "chosen" : ""}"><td>${ACTION_WORDS[a]}</td><td>${costs[a] === null ? "not offered (model is sure, or no reviewer free)" : usd(costs[a])}</td></tr>`).join("");
-  return `<p class="muted">The system picks the action with the lowest expected cost (lost parcel, annoyed customer, reviewer time).</p>
+    `<tr class="${a === b.decision.model_action ? "chosen" : ""}"><td>${ACTION_WORDS[a]}</td><td>${costs[a] === null ? "not offered (model is sure, or no reviewer free)" : usd(costs[a])}</td></tr>`).join("");
+  const f = b.rule_facts || {};
+  const facts = [
+    ["Bookings in the last hour", f.bookings_last_hour], ["Times the normal daily amount", f.times_normal_daily],
+    ["Days since last order", f.days_since_last_order], ["Device", `${f.device}${f.new_device ? " (new)" : ""}`],
+    ["Payment method", `${f.payment_method}${f.new_payment_method ? " (new)" : ""}${f.payment_age_minutes != null ? `, added ${f.payment_age_minutes} min ago` : ""}`],
+    ["Destination seen before", f.destination_seen_before ? "yes" : "no"], ["Express delivery", f.express ? "yes" : "no"],
+    ["Booking hour", f.booking_hour], ["Parcel weight", f.parcel_weight_kg != null ? `${f.parcel_weight_kg} kg (usual ${f.usual_weight_kg ?? "unknown"} kg)` : "not given"],
+    ["Confirmed fraud at this address / device / payment", `${f.fraud_cases_at_address ?? 0} / ${f.fraud_cases_on_device ?? 0} / ${f.fraud_cases_on_payment ?? 0}`],
+  ].map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v ?? "—")}</td></tr>`).join("");
+  return `<h3 style="font-size:15px;margin:4px 0 6px">What the rules looked at</h3><table><tbody>${facts}</tbody></table>
+    <h3 style="font-size:15px;margin:12px 0 6px">The AI model's own choice (before the rules)</h3>
+    <p class="muted">Below ${pct(OPT.thresholds.verify, 0)} overall risk, the action with the lowest expected cost is used (lost parcel, annoyed customer, reviewer time). Model choice: <b>${ACTION_WORDS[b.decision.model_action] || "—"}</b>.</p>
     <table><thead><tr><th>Action</th><th>Expected cost</th></tr></thead><tbody>${rows}</tbody></table>
-    <p class="muted">Model certainty (90%): ${b.conformal.set.map(esc).join(" or ")}. Exact score: ${pct(b.p_fraud, 2)}.</p>
+    <p class="muted">Model certainty (90%): ${b.conformal.set.map(esc).join(" or ")}. Exact model score: ${pct(b.model_risk, 2)}.</p>
     <h3 style="font-size:15px;margin:12px 0 6px">History</h3>
-    <ol class="timeline">${b.events.map((e) => `<li>${esc(e.at.slice(11, 16))}: ${esc(OUTCOME[e.status].short)}, ${esc(e.note)}</li>`).join("")}</ol>`;
+    <ol class="timeline">${b.events.map((e) => `<li>${esc(e.at.slice(5, 16))}: ${esc(OUTCOME[e.status].short)}, ${esc(e.note)}</li>`).join("")}</ol>`;
 }
 
 async function verify(ev) {
@@ -347,11 +463,6 @@ function newOrder() {
 }
 
 // ------------------------------------------------------------------ lists
-function badge(status) {
-  const o = OUTCOME[status];
-  return `<span class="badge ${o.cls}">${esc(o.short)}</span>`;
-}
-
 async function refreshLists() {
   let mine = [], queue = [];
   try { [mine, queue] = await Promise.all([api("/dataco/bookings"), api("/dataco/review-queue")]); } catch { return; }
@@ -361,8 +472,8 @@ async function refreshLists() {
   $("#mine-list").innerHTML = mine.map((b) => {
     const o = OUTCOME[b.status];
     return `<li><button type="button" data-id="${esc(b.booking_id)}"><svg class="${o.cls}" aria-hidden="true"><use href="#${o.icon}"/></svg>
-      <span class="t">${usd(b.summary.net_total)} to ${esc(b.summary.order_city)}, ${esc(b.summary.order_country)}</span>${badge(b.status)}
-      <span class="s">Order ${esc(b.booking_id.replace("dataco-", "#"))} · ${esc(PAYMENT[b.summary.payment_type][0])} · ${esc(b.tracking_id || b.reference || "waiting")}</span></button></li>`;
+      <span class="t">${usd(b.summary.net_total)} to ${esc(b.summary.order_city)}, ${esc(b.summary.order_country)}</span>${badge(b.status, b.confirmed_fraud)}
+      <span class="s">Order ${esc(b.booking_id.replace("dataco-", "#"))} · risk ${pct(b.overall_risk)} · ${esc(PAYMENT[b.summary.payment_type][0])} · ${esc(b.tracking_id || b.reference || "waiting")}</span></button></li>`;
   }).join("");
   $$("#mine-list button").forEach((x) => x.addEventListener("click", async () => showOrder(await api(`/dataco/bookings/${x.dataset.id}`))));
 
@@ -370,11 +481,12 @@ async function refreshLists() {
   $("#queue").innerHTML = queue.map((b) => `<article class="qcard" data-id="${esc(b.booking_id)}">
     <h3>${usd(b.summary.net_total)} to ${esc(b.summary.order_city)}, ${esc(b.summary.order_country)}</h3>
     <p class="muted">Order ${esc(b.booking_id.replace("dataco-", "#"))} · customer ${b.customer_id} · ${esc(PAYMENT[b.summary.payment_type][0])}</p>
-    <p>Fraud risk <span class="big-risk">${pct(b.p_fraud)}</span> · ${riskLevel(b.p_fraud)[0]}</p>
-    ${(b.rules_detail || []).length ? `<ul class="rules">${b.rules_detail.map((r) => `<li><span class="pct">${pct(r.score, 0)}</span><span>${esc(cap(r.text))}</span></li>`).join("")}</ul>` : ""}
+    <p>Overall risk <span class="big-risk">${pct(b.overall_risk)}</span></p>
+    ${(b.rules_matched || []).length ? `<ul class="rules">${b.rules_matched.map((r) => `<li><span class="pct">${pct(r.weight, 0)}</span><span><b>${esc(r.name)}</b><br>${esc(r.plain)}</span></li>`).join("")}</ul>`
+      : `<p class="muted">No rule matched: the AI model was unsure (model risk ${pct(b.model_risk)}).</p>`}
     <div class="field"><label for="note-${esc(b.booking_id)}">Note (optional)</label><input id="note-${esc(b.booking_id)}" maxlength="300" placeholder="e.g. called the customer"></div>
     <div class="row-start"><button type="button" class="btn blue" data-approve="true">Approve and ship</button>
-    <button type="button" class="btn primary" data-approve="false">Reject and stop</button></div></article>`).join("");
+    <button type="button" class="btn primary" data-approve="false">Reject: confirmed fraud</button></div></article>`).join("");
   $$("#queue button").forEach((btn) => btn.addEventListener("click", async () => {
     const card = btn.closest(".qcard"); btn.disabled = true;
     try {

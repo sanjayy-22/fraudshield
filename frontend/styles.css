@@ -177,3 +177,57 @@ dialog form { display: flex; flex-direction: column; gap: 16px; }
 .summary dt { color: var(--ink-2); } .summary dd { margin: 0; font-weight: 600; }
 @media (prefers-reduced-motion: no-preference) { .outcome { animation: pop .25s ease-out; } }
 @keyframes pop { from { transform: scale(.98); } to { transform: none; } }
+
+/* ---------- demos, extra signals, rules guide */
+.demos { display: flex; flex-direction: column; gap: 10px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 20px; }
+.demos h2 { font-size: 18px; }
+.demo-group h3 { font-size: 14px; color: var(--ink-2); font-weight: 700; margin-bottom: 6px; }
+.demo-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.demo-btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: #FFFFFF; border-radius: 12px; padding: 6px 8px 6px 12px; cursor: pointer; font-weight: 600; text-align: left; }
+.demo-btn:hover { background: var(--cream); border-color: var(--peach); }
+.demo-btn .badge { font-size: 12px; padding: 2px 8px; }
+.setup-note { background: var(--cream); border: 2px dashed var(--peach); border-radius: 12px; padding: 12px 16px; }
+.setup-note h3 { font-size: 16px; margin-bottom: 4px; }
+.setup-note ul { margin: 4px 0 0; padding-left: 20px; }
+details.step > summary { list-style: none; cursor: pointer; }
+details.step > summary::-webkit-details-marker { display: none; }
+details.step > summary h2 small { font-weight: 600; font-size: 14px; color: var(--ink-2); font-family: var(--body); }
+details.step[open] > summary { margin-bottom: 4px; }
+.rules-guide { margin-top: 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+.rules-guide summary { cursor: pointer; font-weight: 700; }
+.guide-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
+.guide-table th, .guide-table td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.guide-table td.w { font-family: var(--display); font-weight: 800; white-space: nowrap; }
+.tablewrap { overflow-x: auto; }
+.hard { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--peach); font-size: 12px; font-weight: 700; white-space: nowrap; }
+
+/* ---------- how the risk adds up */
+.adds { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.adds li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; background: var(--cream); border-radius: 12px; padding: 12px 14px; }
+.adds .nm { font-weight: 700; }
+.adds .wt { font-family: var(--display); font-weight: 800; background: var(--apricot); border-radius: 8px; padding: 0 10px; align-self: start; }
+.adds .mn { grid-column: 1 / -1; font-size: 14px; color: var(--ink-2); }
+.adds .bar { grid-column: 1 / -1; position: relative; height: 10px; border-radius: 999px; background: #FFFFFF; overflow: hidden; }
+.adds .bar b { position: absolute; top: 0; bottom: 0; left: 0; background: var(--sky); }
+.adds .bar i { position: absolute; top: 0; bottom: 0; background: var(--peach); }
+.adds .ft { grid-column: 1 / -1; font-size: 14px; font-variant-numeric: tabular-nums; }
+.adds li.base { background: var(--sky); }
+.adds li.total { background: var(--paper); border: 2px solid var(--ink-2); }
+.adds li.total .nm { font-family: var(--display); font-size: 18px; }
+.formula { font-size: 14px; color: var(--ink-2); margin: 0; }
+.ruler { position: relative; height: 18px; border-radius: 999px; margin-top: 30px;
+  background: linear-gradient(90deg, var(--sky) 0 30%, var(--apricot) 30% 60%, #FFCBA0 60% 85%, var(--peach) 85% 100%); }
+.ruler .tick { position: absolute; top: -26px; transform: translateX(-50%); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.ruler .tick::after { content: ""; position: absolute; left: 50%; top: 18px; width: 2px; height: 26px; background: var(--ink-2); }
+.ruler .you { position: absolute; top: -6px; width: 8px; height: 30px; border-radius: 4px; background: var(--ink); transform: translateX(-50%); }
+.ruler-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--ink-2); margin-top: 8px; }
+.ruler-legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; background: var(--c); }
+
+/* ---------- AI explanation */
+.ai { background: var(--paper); border: 2px solid var(--sky); border-radius: var(--r); padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+.ai-head { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; }
+.ai-text { font-size: 17px; line-height: 1.6; margin: 0; }
+.ai-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; background: var(--sky); }
+.ai-badge.template { background: var(--apricot); }
+.ai-note { font-size: 13px; color: var(--ink-2); margin: 0; }
+.loading { color: var(--ink-2); font-style: italic; }

@@ -122,4 +122,4 @@ def test_every_state_change_is_in_the_ledger(desk):
     b = desk.create(RISKY)
     desk.verify(b.booking_id, b.verification_code)
     ok, n = desk.shield.ledger.verify()
-    assert ok and n == 2          # the decision + the confirmation
+    assert ok and n == 3          # the model decision + the final decision (with rules) + the confirmation

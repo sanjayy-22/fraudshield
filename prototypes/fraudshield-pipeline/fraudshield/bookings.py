@@ -9,8 +9,15 @@ A booking moves through these states:
                 → CONFIRMED (approved) or BLOCKED (rejected)
     BLOCK   → BLOCKED                reference number only, no shipment
 
-The fraud model only sees booking-time fields. Every decision and every later state change is
-appended to the hash-chained ledger.
+How the decision is made (see `decide`):
+* the model gives a fraud probability p from booking-time fields;
+* every matched rule adds risk: new = old + (100% − old) × rule weight, starting from p;
+* a hard rule (known fraud address or payment method) stops the order; otherwise the overall risk
+  is compared with THRESHOLDS: ≥ 85% stop, ≥ 60% team review, ≥ 30% verify; below 30% the model
+  and the cost policy decide as before.
+"Confirmed fraud" means an analyst rejected the order or the customer failed verification 3 times.
+
+Every decision and every later state change is appended to the hash-chained ledger.
 
 Demo-only simplifications, stated so nobody mistakes them for production behaviour:
 * There is no SMS or e-mail gateway. The one-time code is returned in the API response
@@ -28,13 +35,17 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-from .dataco import DataCoShield
+from .dataco import DATACO_RULES, DataCoShield
+from .signals import PLAIN, SignalStore, catalogue, shipment_rule_hits
 
 CLOCK_START = pd.Timestamp("2018-02-01 09:00")
 SCHEDULED_DAYS = {"Same Day": 0, "First Class": 1, "Second Class": 2, "Standard Class": 4}
 PAYMENT_TYPES = ["DEBIT", "TRANSFER", "PAYMENT", "CASH"]
 SEGMENTS = ["Consumer", "Corporate", "Home Office"]
 MAX_CODE_ATTEMPTS = 3
+# Overall-risk thresholds. Policy choices for this demo, not learned from data: DataCo has no labels
+# for the shipment signals, and the rule weights are the hand-set expert weights in rules.py.
+THRESHOLDS = {"verify": 0.30, "review": 0.60, "stop": 0.85}
 
 STATUS_FOR_ACTION = {"ALLOW": "CONFIRMED", "STEP_UP": "VERIFICATION_REQUIRED", "HOLD": "UNDER_REVIEW",
                      "BLOCK": "BLOCKED"}
@@ -44,6 +55,9 @@ MESSAGES = {
     "UNDER_REVIEW": "Your booking is being checked by our team. You'll get a tracking ID once it's approved.",
     "BLOCKED": "We couldn't accept this booking. Quote the reference number if you contact support.",
 }
+
+
+ACTION_WORDS = {"ALLOW": "Approve", "STEP_UP": "Verify", "HOLD": "Team review", "BLOCK": "Stop"}
 
 
 class BookingError(ValueError):
@@ -66,6 +80,14 @@ class Booking:
     conformal: dict
     order: dict
     items: list
+    model_risk: float = 0.0
+    overall_risk: float = 0.0
+    rules_matched: list = field(default_factory=list)
+    risk_steps: list = field(default_factory=list)
+    decided_by: str = ""
+    signals: dict = field(default_factory=dict)
+    rule_facts: dict = field(default_factory=dict)
+    confirmed_fraud: bool = False
     tracking_id: str | None = None
     label: dict | None = None
     reference: str | None = None
@@ -92,6 +114,8 @@ class BookingDesk:
     def __init__(self, shield: DataCoShield, orders: pd.DataFrame, items: pd.DataFrame):
         self.shield = shield
         self.started = time.time()
+        self.offset = pd.Timedelta(0)          # demo clock jumps (a chosen booking time); never backwards
+        self.signals = SignalStore()
         self.bookings: dict[str, Booking] = {}
         self.next_order_id = int(orders.order_id.max()) + 1
         self.next_customer_id = int(orders.customer_id.max()) + 1
@@ -126,7 +150,7 @@ class BookingDesk:
             cities=self.cities,
             products=[dict(id=int(i), name=r["name"], category=r.category, department=r.department,
                            price=round(float(r.price), 2)) for i, r in self.products.iterrows()],
-            clock=str(self.now()),
+            clock=str(self.now()), thresholds=THRESHOLDS,
         )
 
     def customer(self, customer_id: int) -> dict | None:
@@ -137,7 +161,18 @@ class BookingDesk:
                     city=r.customer_city, earlier_orders=int(self.customer_orders.get(customer_id, 0)))
 
     def now(self) -> pd.Timestamp:
-        return (CLOCK_START + pd.Timedelta(seconds=time.time() - self.started)).floor("s")
+        return (CLOCK_START + pd.Timedelta(seconds=time.time() - self.started) + self.offset).floor("s")
+
+    def advance_to(self, ts: pd.Timestamp) -> None:
+        """Move the demo clock forward to ts (never backwards)."""
+        gap = pd.Timestamp(ts) - self.now()
+        if gap > pd.Timedelta(0):
+            self.offset += gap
+
+    def rules_guide(self) -> dict:
+        return dict(rules=catalogue(DATACO_RULES), thresholds=THRESHOLDS,
+                    combine="Each matched rule adds risk: new = old + (100% − old) × weight. "
+                            "The start is the AI model's own fraud probability.")
 
     # ------------------------------------------------------------------ create
     def _order_from_form(self, form: dict) -> tuple[dict, list[dict], list[dict]]:
@@ -204,26 +239,83 @@ class BookingDesk:
         return order_from_items(header, raw), raw, shown
 
     def create(self, form: dict) -> Booking:
+        if form.get("book_at"):
+            try:
+                self.advance_to(pd.Timestamp(form["book_at"]))
+            except ValueError:
+                raise BookingError("Booking time must look like 2018-02-02 02:00.")
+        sig = {k: v for k, v in (form.get("signals") or {}).items() if v not in (None, "")}
+        if "weight_kg" in sig and not 0 < float(sig["weight_kg"]) <= 1000:
+            raise BookingError("Parcel weight must be between 0 and 1000 kg.")
         order, _, shown = self._order_from_form(form)
-        cid = order["customer_id"]
+        cid, ts = order["customer_id"], pd.Timestamp(order["ts"])
         self.customer_orders.loc[cid] = int(self.customer_orders.get(cid, 0)) + 1
+        features, facts = self.signals.compute(self.shield.known, order, sig, ts)   # before this order joins history
         r = self.shield.score_new(order, explain=True)
-        action = r["decision"]["action"]
-        b = Booking(booking_id=r["booking_id"], order_id=order["order_id"], created_at=str(order["ts"]),
-                    customer_id=order["customer_id"], status=STATUS_FOR_ACTION[action], decision=r["decision"],
-                    p_fraud=round(r["p_fraud"], 4), reasons=r.get("reasons", []), rule_text=r.get("rule_text", []),
-                    rules_detail=r.get("rules_detail", []), rule_score=round(r["rules"]["score"], 4),
-                    conformal=r["conformal"], order=order, items=shown)
-        b.events.append(dict(at=b.created_at, status=b.status, note=f"model decision: {action}"))
+        model_action = r["decision"]["action"]
+
+        weights = {x.code: x for x in DATACO_RULES}
+        hits = [dict(code=d["code"], weight=d["score"], hard=False) for d in r.get("rules_detail", [])]
+        hits += [dict(code=x.code, weight=x.weight, hard=x.hard) for x in shipment_rule_hits(features)]
+        hits.sort(key=lambda h: (-h["hard"], -h["weight"]))
+        p = float(r["p_fraud"])
+        risk, steps = p, [dict(step="AI model", before=0.0, after=p)]
+        for h in hits:
+            before, risk = risk, risk + (1 - risk) * h["weight"]
+            h.update(name=PLAIN[h["code"]][0], plain=PLAIN[h["code"]][1], before=before, after=risk)
+            steps.append(dict(step=h["name"], code=h["code"], weight=h["weight"], before=before, after=risk))
+        rule_score = 1.0
+        for h in hits:
+            rule_score *= 1 - h["weight"]
+        rule_score = 1 - rule_score
+        action, decided_by = self.decide(model_action, risk, hits, ts)
+
+        decision = dict(r["decision"], action=action, model_action=model_action, reason=decided_by)
+        b = Booking(booking_id=r["booking_id"], order_id=order["order_id"], created_at=str(ts), customer_id=cid,
+                    status=STATUS_FOR_ACTION[action], decision=decision, p_fraud=round(p, 4),
+                    reasons=r.get("reasons", []), rule_text=[h["plain"] for h in hits],
+                    rules_detail=[dict(code=h["code"], text=h["name"], score=h["weight"]) for h in hits],
+                    rule_score=round(rule_score, 4), conformal=r["conformal"], order=order, items=shown,
+                    model_risk=round(p, 4), overall_risk=round(risk, 4), rules_matched=hits, risk_steps=steps,
+                    decided_by=decided_by, signals=sig, rule_facts=facts)
+        b.events.append(dict(at=b.created_at, status=b.status, note=f"{ACTION_WORDS[action]}: {decided_by}"))
+        if self.shield.ledger is not None:
+            self.shield.ledger.append(dict(booking_id=b.booking_id, event="final decision", action=action,
+                                           model_action=model_action, overall_risk=risk, rules=[h["code"] for h in hits],
+                                           signals=sig, ts=str(ts)))
         if b.status == "CONFIRMED":
             self._confirm(b, "approved automatically")
         elif b.status == "VERIFICATION_REQUIRED":
             b.verification_code = _code(6, string.digits)
             b.attempts_left = MAX_CODE_ATTEMPTS
         elif b.status == "BLOCKED":
-            self._block(b, "blocked by the decision policy")
+            self._block(b, decided_by)
         self.bookings[b.booking_id] = b
         return b
+
+    def decide(self, model_action: str, risk: float, hits: list, ts: pd.Timestamp) -> tuple[str, str]:
+        """Final action from the overall risk; below the verify threshold the model + cost policy decide."""
+        cap = self.shield.capacity
+        hard = [h for h in hits if h["hard"]]
+        if hard:
+            action, why = "BLOCK", f"hard rule matched: {PLAIN[hard[0]['code']][0]}"
+        elif risk >= THRESHOLDS["stop"]:
+            action, why = "BLOCK", f"overall risk {risk:.1%} is at or above the {THRESHOLDS['stop']:.0%} stop line"
+        elif risk >= THRESHOLDS["review"]:
+            if model_action == "HOLD" or cap.available(ts):
+                action, why = "HOLD", f"overall risk {risk:.1%} is between {THRESHOLDS['review']:.0%} and {THRESHOLDS['stop']:.0%}"
+            else:
+                action, why = "STEP_UP", f"overall risk {risk:.1%} needs a review, but no reviewer is free, so we verify instead"
+        elif risk >= THRESHOLDS["verify"]:
+            action, why = "STEP_UP", f"overall risk {risk:.1%} is between {THRESHOLDS['verify']:.0%} and {THRESHOLDS['review']:.0%}"
+        else:
+            action = model_action
+            why = f"overall risk {risk:.1%} is below {THRESHOLDS['verify']:.0%}, so the AI model and cost policy decide"
+        if model_action == "HOLD" and action != "HOLD":
+            cap.release(ts)
+        elif action == "HOLD" and model_action != "HOLD":
+            cap.consume(ts)
+        return action, why
 
     # ------------------------------------------------------------------ transitions
     def _event(self, b: Booking, status: str, note: str) -> None:
@@ -243,11 +335,19 @@ class BookingDesk:
                        customer_id=b.customer_id, items=sum(i["quantity"] for i in b.items),
                        declared_value_usd=round(float(o["net_total"]), 2), booked_at=b.created_at)
         b.verification_code = None
+        self.signals.record_genuine(b.customer_id, o, b.signals, pd.Timestamp(b.created_at))
         self._event(b, "CONFIRMED", note)
 
-    def _block(self, b: Booking, note: str) -> None:
+    def _block(self, b: Booking, note: str, confirmed: bool = False) -> None:
         b.reference = f"REF-{_code(8, string.ascii_uppercase + string.digits)}"
         b.verification_code = None
+        if confirmed:
+            b.confirmed_fraud = True
+            marked = self.signals.record_fraud(b.order, b.signals)
+            known = self.shield.known
+            known.loc[known.order_id == b.order_id, "is_fraud"] = 1
+            if marked:
+                note += "; recorded as fraud: " + ", ".join(marked)
         self._event(b, "BLOCKED", note)
 
     def get(self, booking_id: str) -> Booking:
@@ -265,7 +365,7 @@ class BookingDesk:
         else:
             b.attempts_left -= 1
             if b.attempts_left <= 0:
-                self._block(b, "verification failed 3 times")
+                self._block(b, "confirmed fraud: verification failed 3 times", confirmed=True)
             else:
                 b.events.append(dict(at=str(self.now()), status=b.status,
                                      note=f"wrong code, {b.attempts_left} attempt(s) left"))
@@ -279,7 +379,7 @@ class BookingDesk:
         if approve:
             self._confirm(b, "analyst approved" + suffix)
         else:
-            self._block(b, "analyst rejected" + suffix)
+            self._block(b, "confirmed fraud: analyst rejected" + suffix, confirmed=True)
         return b
 
     def queue(self) -> list[Booking]:
