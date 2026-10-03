@@ -3,170 +3,156 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FraudShield Booking Desk</title>
+<title>FraudShield Order Desk</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Nunito+Sans:wght@400;600;700&display=swap">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 12h9M18 12v3M21 12v2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="currentColor"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2.5l8 3v6.2c0 4.9-3.3 8.4-8 9.8-4.7-1.4-8-4.9-8-9.8V5.5l8-3z" fill="currentColor"/></symbol>
+</svg>
+
 <header class="top">
   <div class="brand">
-    <span class="mark" aria-hidden="true"></span>
+    <svg class="logo" aria-hidden="true"><use href="#i-shield"/></svg>
     <div>
-      <h1>FraudShield Booking Desk</h1>
-      <p class="muted">Place an order, confirm it, and see how the fraud check handles it.</p>
+      <h1>FraudShield Order Desk</h1>
+      <p>Place an order. We check it for fraud before it ships.</p>
     </div>
   </div>
-  <div class="meta">
-    <span class="chip" id="clock" title="Dataset clock: starts the day after the DataCo data ends and runs in real time">clock —</span>
-    <span class="chip" id="api-status"><span class="dot" id="api-dot"></span><span id="api-text">connecting…</span></span>
-  </div>
+  <p class="conn" id="conn"><span class="dot" id="conn-dot"></span><span id="conn-text">Connecting…</span></p>
 </header>
 
-<nav class="tabs" role="tablist">
-  <button role="tab" id="tab-new" aria-selected="true" data-tab="new">New booking</button>
-  <button role="tab" id="tab-mine" aria-selected="false" data-tab="mine">My bookings <span class="count" id="count-mine">0</span></button>
-  <button role="tab" id="tab-review" aria-selected="false" data-tab="review">Review queue <span class="count" id="count-review">0</span></button>
+<nav class="tabs" aria-label="Sections">
+  <button type="button" data-tab="new" aria-current="page">New order</button>
+  <button type="button" data-tab="mine">My orders <span class="count" id="count-mine">0</span></button>
+  <button type="button" data-tab="review">Team review <span class="count" id="count-review">0</span></button>
 </nav>
 
 <main>
-  <!-- ============================== NEW BOOKING -->
-  <section class="panel-grid" id="view-new" role="tabpanel" aria-labelledby="tab-new">
-    <form id="booking-form" novalidate>
-      <div class="samples">
-        <span class="muted">Fill with an example:</span>
-        <button type="button" class="link" data-sample="regular">Returning customer, debit card</button>
-        <button type="button" class="link" data-sample="transfer">Returning customer, bank transfer</button>
-        <button type="button" class="link" data-sample="new">New customer, bank transfer</button>
-        <button type="button" class="link" data-sample="risky">Bulk discounted order, bank transfer</button>
+  <!-- ======================================================= NEW ORDER -->
+  <section id="view-new">
+    <section class="guide" aria-labelledby="guide-title">
+      <h2 id="guide-title">What can happen to an order</h2>
+      <ul class="outcomes">
+        <li class="oc approved"><svg aria-hidden="true"><use href="#i-check"/></svg><strong>Approved</strong><span>Ships right away. You get a tracking number.</span></li>
+        <li class="oc verify"><svg aria-hidden="true"><use href="#i-key"/></svg><strong>Verify</strong><span>The customer types a 6-digit code to prove it's them.</span></li>
+        <li class="oc review"><svg aria-hidden="true"><use href="#i-eye"/></svg><strong>Team review</strong><span>A person checks it before it ships.</span></li>
+        <li class="oc stopped"><svg aria-hidden="true"><use href="#i-stop"/></svg><strong>Stopped</strong><span>Not shipped. You get a reference number.</span></li>
+      </ul>
+    </section>
+
+    <form id="order-form" novalidate>
+      <div class="examples">
+        <span>Try an example:</span>
+        <button type="button" class="chip" data-sample="regular">Card payment</button>
+        <button type="button" class="chip" data-sample="transfer">Bank transfer</button>
+        <button type="button" class="chip" data-sample="risky">Big discounted order</button>
+        <button type="button" class="chip" data-sample="new">New customer</button>
       </div>
 
-      <fieldset>
-        <legend>Customer</legend>
-        <div class="seg" role="radiogroup" aria-label="Customer type">
-          <label><input type="radio" name="ctype" value="existing" id="ctype-existing" checked> Existing customer</label>
-          <label><input type="radio" name="ctype" value="new" id="ctype-new"> New customer</label>
+      <section class="step">
+        <h2><span class="num">1</span>Who is ordering?</h2>
+        <div class="toggle" role="radiogroup" aria-label="Customer type">
+          <label><input type="radio" name="ctype" value="existing" id="ctype-existing" checked>Returning customer</label>
+          <label><input type="radio" name="ctype" value="new" id="ctype-new">New customer</label>
         </div>
-        <div id="existing-box" class="row">
+        <div id="existing-box" class="fields">
           <div class="field">
-            <label for="customer_id">Customer ID</label>
-            <input id="customer_id" inputmode="numeric" placeholder="e.g. 12366">
-          </div>
-          <button type="button" class="secondary" id="lookup">Look up</button>
-          <p class="hint" id="customer-info">Enter an ID from the DataCo data, between 1 and 20757.</p>
-        </div>
-        <div id="new-box" class="row" hidden>
-          <div class="field">
-            <label for="customer_segment">Segment</label>
-            <select id="customer_segment"></select>
-          </div>
-          <div class="field">
-            <label for="customer_country">Home country</label>
-            <select id="customer_country"></select>
-          </div>
-          <div class="field grow">
-            <label for="customer_city">Home city</label>
-            <input id="customer_city" placeholder="e.g. Caguas">
+            <label for="customer_id">Customer number</label>
+            <div class="inline">
+              <input id="customer_id" inputmode="numeric" placeholder="e.g. 12366">
+              <button type="button" class="btn ghost" id="lookup">Find</button>
+            </div>
+            <p class="help" id="customer-info">Any number from 1 to 20757 is a real customer from the data.</p>
           </div>
         </div>
-      </fieldset>
+        <div id="new-box" class="fields grid3" hidden>
+          <div class="field"><label for="customer_segment">Customer type</label><select id="customer_segment"></select></div>
+          <div class="field"><label for="customer_country">Lives in</label><select id="customer_country"></select></div>
+          <div class="field"><label for="customer_city">Home city</label><input id="customer_city" placeholder="e.g. Caguas"></div>
+        </div>
+      </section>
 
-      <fieldset>
-        <legend>Delivery</legend>
-        <div class="row">
-          <div class="field grow">
-            <label for="order_country">Destination country</label>
+      <section class="step">
+        <h2><span class="num">2</span>Where is it going?</h2>
+        <div class="fields grid2">
+          <div class="field">
+            <label for="order_country">Country</label>
             <input id="order_country" list="country-list" placeholder="Start typing, e.g. Francia" autocomplete="off">
             <datalist id="country-list"></datalist>
           </div>
-          <div class="field grow">
-            <label for="order_city">Destination city</label>
+          <div class="field">
+            <label for="order_city">City</label>
             <input id="order_city" list="city-list" placeholder="e.g. Paris" autocomplete="off">
             <datalist id="city-list"></datalist>
           </div>
         </div>
-        <p class="hint" id="geo-hint">Country names follow the DataCo data, which is in Spanish (Francia, Alemania, Estados Unidos…).</p>
-        <div class="field">
-          <label for="shipping_mode">Shipping service</label>
-          <select id="shipping_mode"></select>
-        </div>
-      </fieldset>
+        <p class="help" id="geo-help">Country names are in Spanish, as in the original data: Francia = France, Alemania = Germany, Estados Unidos = United States.</p>
+        <fieldset class="cards" id="speed-options"><legend>How fast?</legend></fieldset>
+      </section>
 
-      <fieldset>
-        <legend>Items</legend>
-        <div class="items-head" aria-hidden="true">
-          <span>Product</span><span>Qty</span><span>Discount</span><span class="num">Line total</span><span></span>
+      <section class="step">
+        <h2><span class="num">3</span>What's in the parcel?</h2>
+        <div id="items" class="items"></div>
+        <div class="items-foot">
+          <button type="button" class="btn ghost" id="add-item">+ Add another item</button>
+          <p class="total">Total <strong id="order-total">$0.00</strong></p>
         </div>
-        <div id="items"></div>
-        <div class="row between">
-          <button type="button" class="link" id="add-item">+ Add item</button>
-          <p class="total">Order total <strong id="order-total">$0.00</strong></p>
-        </div>
-      </fieldset>
+      </section>
 
-      <fieldset>
-        <legend>Payment</legend>
-        <div class="pay" id="pay-options"></div>
-      </fieldset>
+      <section class="step">
+        <h2><span class="num">4</span>How will they pay?</h2>
+        <fieldset class="cards" id="pay-options"><legend class="sr">Payment method</legend></fieldset>
+      </section>
 
       <p class="error" id="form-error" role="alert" hidden></p>
-      <div class="actions">
-        <button type="submit" class="primary" id="review-btn">Review booking</button>
-      </div>
+      <button type="submit" class="btn primary big" id="submit-btn">Check &amp; place order</button>
     </form>
 
-    <aside class="result" id="result" aria-live="polite">
-      <div class="empty" id="result-empty">
-        <h2>No booking yet</h2>
-        <p class="muted">Fill in the form and confirm. The result appears here:</p>
-        <ul class="legend">
-          <li><span class="pill CONFIRMED">Confirmed</span> tracking ID and shipping label</li>
-          <li><span class="pill VERIFICATION_REQUIRED">Verify</span> customer enters a one-time code</li>
-          <li><span class="pill UNDER_REVIEW">Under review</span> waits for an analyst</li>
-          <li><span class="pill BLOCKED">Blocked</span> reference number, no shipment</li>
-        </ul>
-      </div>
-      <div id="result-body" hidden></div>
-    </aside>
+    <section id="result" hidden aria-live="polite"></section>
   </section>
 
-  <!-- ============================== MY BOOKINGS -->
-  <section id="view-mine" role="tabpanel" aria-labelledby="tab-mine" hidden>
-    <div class="table-wrap">
-      <table class="list">
-        <thead><tr><th>Booking</th><th>Placed</th><th>Customer</th><th>Payment</th><th>To</th><th class="num">Total</th><th>Status</th><th>Tracking / reference</th></tr></thead>
-        <tbody id="mine-rows"></tbody>
-      </table>
-    </div>
-    <p class="muted" id="mine-empty">No bookings yet. They are kept in the server's memory until it restarts.</p>
+  <!-- ======================================================= MY ORDERS -->
+  <section id="view-mine" hidden>
+    <h2 class="page-title">My orders</h2>
+    <p class="lead">Every order placed in this session. Click one to see what happened.</p>
+    <ul class="order-list" id="mine-list"></ul>
+    <p class="empty" id="mine-empty">No orders yet. Place one in <button type="button" class="link" data-goto="new">New order</button>.</p>
   </section>
 
-  <!-- ============================== REVIEW QUEUE -->
-  <section id="view-review" role="tabpanel" aria-labelledby="tab-review" hidden>
-    <p class="muted">Bookings the model was unsure about. Approving issues a tracking ID; rejecting blocks the booking.</p>
-    <div id="queue" class="queue"></div>
-    <p class="muted" id="queue-empty">Nothing waiting for review.</p>
+  <!-- ======================================================= TEAM REVIEW -->
+  <section id="view-review" hidden>
+    <h2 class="page-title">Team review</h2>
+    <p class="lead">These orders need a person to decide. <b>Approve</b> ships the order with a tracking number. <b>Reject</b> stops it.</p>
+    <div class="queue" id="queue"></div>
+    <p class="empty" id="queue-empty">Nothing to review right now. Try the <b>Bank transfer</b> example in New order.</p>
   </section>
 </main>
 
-<dialog id="confirm-dialog" aria-labelledby="confirm-title">
-  <form method="dialog" id="confirm-form">
-    <h2 id="confirm-title">Confirm this booking?</h2>
-    <dl id="confirm-summary" class="summary"></dl>
-    <div class="actions">
-      <button value="cancel" class="secondary" id="confirm-cancel">Edit</button>
-      <button value="ok" class="primary" id="confirm-ok">Confirm booking</button>
+<dialog id="confirm" aria-labelledby="confirm-title">
+  <form method="dialog">
+    <h2 id="confirm-title">Is this order right?</h2>
+    <dl class="summary" id="confirm-summary"></dl>
+    <div class="row-end">
+      <button value="back" class="btn ghost">Go back</button>
+      <button value="ok" class="btn primary" id="confirm-ok">Place order</button>
     </div>
   </form>
 </dialog>
 
-<template id="item-row">
+<template id="item-tpl">
   <div class="item">
-    <select class="product" aria-label="Product"></select>
-    <input class="qty" type="number" min="1" max="5" value="1" aria-label="Quantity">
-    <select class="disc" aria-label="Discount"></select>
-    <span class="line num">$0.00</span>
-    <button type="button" class="icon remove" aria-label="Remove item">×</button>
+    <div class="field product"><label>Product</label><select class="p"></select></div>
+    <div class="field"><label>How many</label><input class="q" type="number" min="1" max="5" value="1"></div>
+    <div class="field"><label>Discount</label><select class="d"></select></div>
+    <p class="line">$0.00</p>
+    <button type="button" class="remove" aria-label="Remove this item">Remove</button>
   </div>
 </template>
 

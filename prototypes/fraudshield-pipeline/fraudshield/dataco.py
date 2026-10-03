@@ -163,6 +163,8 @@ class DataCoShield:
         if explain:
             result["reasons"] = self.reasons(f)
             result["rule_text"] = [RULE_TEXT[h] for h in rr.hits]
+            weights = {r.code: r.weight for r in DATACO_RULES}
+            result["rules_detail"] = [dict(code=h, text=RULE_TEXT[h], score=weights[h]) for h in rr.hits]
         return result
 
     def score_new(self, order: dict, explain: bool = True) -> dict:

@@ -61,6 +61,8 @@ class Booking:
     p_fraud: float
     reasons: list
     rule_text: list
+    rules_detail: list
+    rule_score: float
     conformal: dict
     order: dict
     items: list
@@ -210,6 +212,7 @@ class BookingDesk:
         b = Booking(booking_id=r["booking_id"], order_id=order["order_id"], created_at=str(order["ts"]),
                     customer_id=order["customer_id"], status=STATUS_FOR_ACTION[action], decision=r["decision"],
                     p_fraud=round(r["p_fraud"], 4), reasons=r.get("reasons", []), rule_text=r.get("rule_text", []),
+                    rules_detail=r.get("rules_detail", []), rule_score=round(r["rules"]["score"], 4),
                     conformal=r["conformal"], order=order, items=shown)
         b.events.append(dict(at=b.created_at, status=b.status, note=f"model decision: {action}"))
         if b.status == "CONFIRMED":
