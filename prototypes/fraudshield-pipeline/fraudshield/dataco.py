@@ -11,6 +11,8 @@ LTV = max(2 × prior spend, order value); an analyst review costs 5 USD.
 """
 from __future__ import annotations
 
+import json
+import pickle
 import sys
 from pathlib import Path
 
@@ -56,6 +58,11 @@ LABELS = {
     "order_region": "destination region", "main_category": "main product category", "market": "market",
     "main_department": "main department", "shipping_mode": "shipping mode", "customer_segment": "customer segment",
     "customer_country": "customer country", "days_shipment_scheduled": "scheduled shipping days",
+    "n_categories": "product categories in the order", "n_departments": "departments in the order",
+    "max_unit_price": "highest unit price (USD)", "cust_orders_7d": "customer's orders in the last 7 days",
+    "cust_orders_30d": "customer's orders in the last 30 days", "cust_prior_transfer": "customer's earlier bank transfers",
+    "cust_prior_cancel": "customer's earlier cancelled orders", "cust_new_country": "first order to this country",
+    "cust_new_city": "first order to this city",
 }
 
 
@@ -168,3 +175,34 @@ class DataCoShield:
         new["ts"] = pd.Timestamp(row["ts"])
         self.known = pd.concat([self.known, new], ignore_index=True)
         return r
+
+    # ------------------------------------------------------------------ persistence
+    SAVED_FIELDS = ("coder", "model", "conformal", "thresholds", "training_summary", "cp", "alpha")
+
+    def save(self, folder: str | Path, metadata: dict | None = None) -> Path:
+        """Write the fitted components to <folder>/fraudshield_dataco.pkl and a readable metadata.json.
+        The pickle needs the same pandas / scikit-learn / LightGBM major versions to load."""
+        folder = Path(folder)
+        folder.mkdir(parents=True, exist_ok=True)
+        blob = {k: getattr(self, k) for k in self.SAVED_FIELDS}
+        blob["feature_version"] = FEATURE_VERSION
+        (folder / "fraudshield_dataco.pkl").write_bytes(pickle.dumps(blob))
+        meta = dict(model_version=self.model.version, feature_version=FEATURE_VERSION,
+                    ruleset_version=RULESET_VERSION, features=COLS, thresholds=self.thresholds,
+                    training=self.training_summary, alpha=self.alpha, **(metadata or {}))
+        (folder / "metadata.json").write_text(json.dumps(meta, indent=1, default=str), encoding="utf-8")
+        return folder / "fraudshield_dataco.pkl"
+
+    @classmethod
+    def load(cls, folder: str | Path, ledger_path: str | Path | None = None,
+             review_capacity: ReviewCapacity | None = None) -> "DataCoShield":
+        blob = pickle.loads((Path(folder) / "fraudshield_dataco.pkl").read_bytes())
+        if blob.get("feature_version") != FEATURE_VERSION:
+            raise ValueError(f"saved model uses features {blob.get('feature_version')}, code expects "
+                             f"{FEATURE_VERSION}; retrain with train_dataco.py")
+        shield = cls(ledger_path=ledger_path, cost_params=blob["cp"], review_capacity=review_capacity,
+                     alpha=blob["alpha"])
+        for k in cls.SAVED_FIELDS:
+            setattr(shield, k, blob[k])
+        return shield
+
