@@ -63,8 +63,82 @@ async function start() {
   buildForm();
   loadDemos();
   loadRulesGuide();
+  loadTour();
   refreshLists();
   setInterval(() => api("/health").then(() => setConn(true), () => setConn(false)), 15000);
+}
+
+// ------------------------------------------------------------------ guided demo
+const LAYER_CLASS = { "ML model": "l-ml", "expert rules": "l-rules", "expert rule (always stops)": "l-rules",
+  "a person": "l-person", "the customer": "l-customer" };
+let tourBusy = false;
+
+async function loadTour() {
+  try {
+    const chapters = await api("/dataco/tour");
+    $("#chapters").innerHTML = chapters.map((c, i) => `
+      <li class="chapter" id="ch-${esc(c.key)}">
+        <div class="ch-head"><span class="num">${i + 1}</span><div><h3>${esc(c.title)}</h3><p class="ch-comp">${esc(c.component)}</p></div>
+          <button type="button" class="btn blue" data-chapter="${esc(c.key)}">Run</button></div>
+        <p class="muted">${esc(c.about)}</p>
+        <div class="ch-steps" aria-live="polite"></div>
+      </li>`).join("");
+    $$("[data-chapter]").forEach((b) => b.addEventListener("click", () => runChapter(b.dataset.chapter)));
+    $("#tour-all").onclick = () => runAll();
+    $("#tour-reset").onclick = () => resetTour(false);
+  } catch (e) { $("#tour-status").textContent = e.message; }
+}
+
+async function runChapter(key) {
+  const card = $(`#ch-${key}`), out = $(".ch-steps", card), btn = $("[data-chapter]", card);
+  btn.disabled = true; out.innerHTML = '<p class="loading">Running…</p>';
+  try {
+    const r = await api(`/dataco/tour/${key}`, { method: "POST" });
+    out.innerHTML = r.steps.map(stepHtml).join("");
+    $$("[data-open]", out).forEach((b) => b.addEventListener("click", async () => showOrder(await api(`/dataco/bookings/${b.dataset.open}`))));
+    card.classList.add("done");
+  } catch (e) { out.innerHTML = `<p class="error">${esc(e.message)}</p>`; }
+  btn.disabled = false; btn.textContent = "Run again";
+  refreshLists();
+}
+
+function stepHtml(s) {
+  const b = s.booking, o = OUTCOME[b.status];
+  const expl = s.explanation ? `<div class="ai"><div class="ai-head"><h3>In simple words</h3>${s.explanation.source === "ai"
+    ? '<span class="ai-badge">Written by AI · numbers checked</span>' : '<span class="ai-badge template">Standard explanation</span>'}</div>
+    <p class="ai-text">${esc(s.explanation.text)}</p></div>` : "";
+  const audit = s.audit ? `<p class="audit ${s.audit.valid ? "ok" : "bad"}">Audit log: ${s.audit.records} records · chain ${s.audit.valid ? "valid" : "BROKEN"}</p>` : "";
+  return `<div class="step-row">
+    <div class="step-top"><svg class="${o.cls} step-icon" aria-hidden="true"><use href="#${o.icon}"/></svg>
+      <b class="step-label">${esc(s.label)}</b>${badge(b.status, b.confirmed_fraud)}</div>
+    <div class="step-meta"><span>Overall risk <b>${pct(b.overall_risk)}</b></span><span>AI model <b>${pct(b.model_risk)}</b></span>
+      <span class="layer ${LAYER_CLASS[s.decided_by] || ""}">Decided by: ${esc(s.decided_by)}</span>
+      ${b.tracking_id ? `<span>Tracking <b class="mono">${esc(b.tracking_id)}</b></span>` : ""}${b.reference ? `<span>Ref <b class="mono">${esc(b.reference)}</b></span>` : ""}</div>
+    <ul class="pointers">${s.pointers.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>
+    ${expl}${audit}
+    <button type="button" class="link" data-open="${esc(b.booking_id)}">Open this order</button></div>`;
+}
+
+async function runAll() {
+  if (tourBusy) return;
+  tourBusy = true; $("#tour-all").disabled = true;
+  await resetTour(true);
+  for (const b of $$("[data-chapter]")) {
+    $("#tour-status").textContent = `Running chapter: ${$("h3", b.closest(".chapter")).textContent}…`;
+    await runChapter(b.dataset.chapter);
+  }
+  $("#tour-status").textContent = "Done. Open any order for the full breakdown, or try the New order tab yourself.";
+  tourBusy = false; $("#tour-all").disabled = false;
+}
+
+async function resetTour(quiet = false) {
+  try {
+    const r = await api("/dataco/reset", { method: "POST" });
+    $$(".chapter").forEach((c) => { c.classList.remove("done"); $(".ch-steps", c).innerHTML = ""; $("[data-chapter]", c).textContent = "Run"; });
+    if (!quiet) $("#tour-status").textContent = `Reset done. Clock: ${r.clock.slice(0, 16)}. No orders, no known fraud.`;
+    shown = null; $("#result").hidden = true; $("#order-form").hidden = false; $(".guide").hidden = false;
+    refreshLists();
+  } catch (e) { $("#tour-status").textContent = e.message; }
 }
 
 // ------------------------------------------------------------------ rules guide + demo buttons
@@ -501,7 +575,7 @@ async function refreshLists() {
 // ------------------------------------------------------------------ tabs
 function go(tab) {
   $$(".tabs button").forEach((b) => { if (b.dataset.tab === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
-  ["new", "mine", "review"].forEach((t) => { $(`#view-${t}`).hidden = t !== tab; });
+  ["tour", "new", "mine", "review"].forEach((t) => { $(`#view-${t}`).hidden = t !== tab; });
   if (tab !== "new") refreshLists();
 }
 

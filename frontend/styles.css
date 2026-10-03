@@ -231,3 +231,30 @@ details.step[open] > summary { margin-bottom: 4px; }
 .ai-badge.template { background: var(--apricot); }
 .ai-note { font-size: 13px; color: var(--ink-2); margin: 0; }
 .loading { color: var(--ink-2); font-style: italic; }
+
+/* ---------- guided demo */
+.tour-intro { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+.tour-intro .lead { margin: 0; }
+.chapters { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.chapter { background: var(--paper); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.chapter.done { border-color: #9CCBEE; }
+.ch-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.ch-head h3 { font-size: 19px; }
+.ch-comp { margin: 2px 0 0; font-size: 13px; color: var(--ink-2); }
+.ch-steps { display: flex; flex-direction: column; gap: 10px; }
+.step-row { background: var(--cream); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.step-top { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+.step-icon { width: 30px; height: 30px; padding: 6px; border-radius: 50%; flex: none; }
+.step-label { font-family: var(--display); }
+.step-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; color: var(--ink-2); }
+.step-meta b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.layer { padding: 1px 10px; border-radius: 999px; font-weight: 700; color: var(--ink); background: var(--paper); border: 1px solid var(--line); }
+.layer.l-ml { background: var(--sky); border-color: #9CCBEE; }
+.layer.l-rules { background: var(--apricot); border-color: #F1C48A; }
+.layer.l-person { background: var(--peach); border-color: #E59F6E; }
+.layer.l-customer { background: var(--paper); border: 1px dashed var(--ink-2); }
+.pointers { margin: 0; padding-left: 20px; font-size: 14px; }
+.audit { margin: 0; font-weight: 700; } .audit.ok { color: #2E7D3E; } .audit.bad { color: var(--peach-ink); }
+.step-row .ai { width: 100%; padding: 14px; }
+.step-row .ai-text { font-size: 15px; }
+@media (max-width: 520px) { .ch-head { grid-template-columns: auto minmax(0, 1fr); } .ch-head .btn { grid-column: 1 / -1; } }

@@ -43,6 +43,24 @@ python3 visuals/make_dataco_charts.py
 cd prototypes/fraudshield-pipeline && uvicorn api:app --port 8080   # POST /score, GET /explain/{id}, POST /feedback
 ```
 
+## Guided demo (start here for a presentation)
+
+Start the backend and frontend (commands below), open http://127.0.0.1:5173 and press **Run the whole demo** on the
+**Guided demo** tab. Six chapters run real orders through the system, and each step says who decided:
+
+| # | Chapter | Shows |
+|---|---|---|
+| 1 | The ML model on its own | the LightGBM model decides alone: card → approved, bank transfer → team review, discounted transfer → verify |
+| 2 | One rule at a time | expert rules and their weights: burst → verify, new card → review, known fraud address → stopped |
+| 3 | Rules add up | three medium rules: 70% → 88% → 92.8%, past the 85% fraud line |
+| 4 | People in the loop, and learning | analyst rejects an order → its card is known fraud → another customer's order with it is stopped |
+| 5 | Verification | wrong code, then right code → approved with tracking number |
+| 6 | Explain and audit | plain-language (AI or standard) explanation and the hash-chained audit-log check |
+
+**Reset** returns to a clean state (clock 2018-02-01 09:00, no orders, no known fraud), so every run gives the same
+results. The system has two scoring layers: an ML model trained on real DataCo orders, and expert-weighted rules for
+signals the dataset doesn't contain (device, card age, weight, address, bursts).
+
 ## Booking desk demo (model → backend → frontend)
 
 ```bash
