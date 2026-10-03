@@ -74,6 +74,11 @@ class ReviewCapacity:
     def consume(self, ts):
         self.used[self._key(ts)] += 1
 
+    def release(self, ts):
+        """Give back a review slot (used when a rule overrides a model HOLD)."""
+        k = self._key(ts)
+        self.used[k] = max(self.used[k] - 1, 0)
+
 
 def unit_costs(charge: float, ltv: float, cp: CostParams) -> dict:
     return dict(

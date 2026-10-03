@@ -5,3 +5,6 @@ prototypes/fraudshield-pipeline/ledger_dataco.jsonl
 experiments/e*-dataco-*/scores.json
 .pytest_cache/
 prototypes/fraudshield-pipeline/ledger_dataco_api.jsonl
+
+# local secrets (OpenRouter key etc.)
+.env
