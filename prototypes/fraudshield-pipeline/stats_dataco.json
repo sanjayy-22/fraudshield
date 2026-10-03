@@ -1,9 +1,25 @@
 {
+ "window": {
+  "start": "2017-07-01",
+  "end": "2018-01-31",
+  "orders": 13670,
+  "fraud": 308,
+  "transfer_orders": 3784
+ },
+ "training": {
+  "train": 41763,
+  "train_fraud": 941,
+  "calib": 5159,
+  "conformal": 5160,
+  "model_version": "lightgbm-6d0ec8e2b84f"
+ },
  "policies": {
   "allow all": {
    "cost_usd": 200026.21,
    "fraud_stopped": 0,
    "legit_blocked": 0,
+   "legit_verified": 0,
+   "reviews": 0,
    "actions": {
     "ALLOW": 13670
    }
@@ -12,6 +28,8 @@
    "cost_usd": 122499.08,
    "fraud_stopped": 242,
    "legit_blocked": 97,
+   "legit_verified": 3476,
+   "reviews": 0,
    "actions": {
     "ALLOW": 9886,
     "STEP_UP": 3784
@@ -21,6 +39,8 @@
    "cost_usd": 236817.49,
    "fraud_stopped": 7,
    "legit_blocked": 58,
+   "legit_verified": 0,
+   "reviews": 0,
    "actions": {
     "ALLOW": 13605,
     "BLOCK": 65
@@ -30,6 +50,8 @@
    "cost_usd": 211181.34,
    "fraud_stopped": 11,
    "legit_blocked": 23,
+   "legit_verified": 0,
+   "reviews": 109,
    "actions": {
     "ALLOW": 13534,
     "BLOCK": 27,
@@ -40,6 +62,8 @@
    "cost_usd": 94735.79,
    "fraud_stopped": 211,
    "legit_blocked": 39,
+   "legit_verified": 1398,
+   "reviews": 1363,
    "actions": {
     "ALLOW": 10780,
     "STEP_UP": 1527,
@@ -47,7 +71,647 @@
    }
   }
  },
+ "live_actions_by_payment": {
+  "CASH": {
+   "ALLOW": 1509
+  },
+  "DEBIT": {
+   "ALLOW": 5231
+  },
+  "PAYMENT": {
+   "ALLOW": 3146
+  },
+  "TRANSFER": {
+   "STEP_UP": 1527,
+   "HOLD": 1363,
+   "ALLOW": 894
+  }
+ },
  "fraud_at_risk_usd": 200026.21,
  "n_fraud": 308,
- "n_legit": 13362
+ "n_legit": 13362,
+ "live_model": {
+  "all_auc": 0.8729207852467843,
+  "transfer_auc": 0.5114981393750093,
+  "transfer_ci": [
+   0.4813475280357714,
+   0.5453526067176242
+  ]
+ },
+ "ambiguous": 2131,
+ "monthly": [
+  {
+   "month": "2015-01",
+   "all_rate": 0.024622271964185788,
+   "transfer_rate": 0.08888888888888889
+  },
+  {
+   "month": "2015-02",
+   "all_rate": 0.024605678233438486,
+   "transfer_rate": 0.08108108108108109
+  },
+  {
+   "month": "2015-03",
+   "all_rate": 0.022459292532285232,
+   "transfer_rate": 0.08213552361396304
+  },
+  {
+   "month": "2015-04",
+   "all_rate": 0.01871345029239766,
+   "transfer_rate": 0.07032967032967033
+  },
+  {
+   "month": "2015-05",
+   "all_rate": 0.028153153153153154,
+   "transfer_rate": 0.1016260162601626
+  },
+  {
+   "month": "2015-06",
+   "all_rate": 0.023768115942028985,
+   "transfer_rate": 0.0876068376068376
+  },
+  {
+   "month": "2015-07",
+   "all_rate": 0.01871809415768576,
+   "transfer_rate": 0.07236842105263158
+  },
+  {
+   "month": "2015-08",
+   "all_rate": 0.023269012485811577,
+   "transfer_rate": 0.08817204301075268
+  },
+  {
+   "month": "2015-09",
+   "all_rate": 0.02403282532239156,
+   "transfer_rate": 0.09297052154195011
+  },
+  {
+   "month": "2015-10",
+   "all_rate": 0.023661971830985916,
+   "transfer_rate": 0.0860655737704918
+  },
+  {
+   "month": "2015-11",
+   "all_rate": 0.019086176980913822,
+   "transfer_rate": 0.07051282051282051
+  },
+  {
+   "month": "2015-12",
+   "all_rate": 0.01772853185595568,
+   "transfer_rate": 0.06694560669456066
+  },
+  {
+   "month": "2016-01",
+   "all_rate": 0.020316027088036117,
+   "transfer_rate": 0.0784313725490196
+  },
+  {
+   "month": "2016-02",
+   "all_rate": 0.02484848484848485,
+   "transfer_rate": 0.08836206896551724
+  },
+  {
+   "month": "2016-03",
+   "all_rate": 0.020975056689342405,
+   "transfer_rate": 0.07838983050847458
+  },
+  {
+   "month": "2016-04",
+   "all_rate": 0.023446658851113716,
+   "transfer_rate": 0.08583690987124463
+  },
+  {
+   "month": "2016-05",
+   "all_rate": 0.023255813953488372,
+   "transfer_rate": 0.082
+  },
+  {
+   "month": "2016-06",
+   "all_rate": 0.021301775147928994,
+   "transfer_rate": 0.0736196319018405
+  },
+  {
+   "month": "2016-07",
+   "all_rate": 0.03185437997724687,
+   "transfer_rate": 0.12095032397408208
+  },
+  {
+   "month": "2016-08",
+   "all_rate": 0.01925254813137033,
+   "transfer_rate": 0.07112970711297072
+  },
+  {
+   "month": "2016-09",
+   "all_rate": 0.019653179190751446,
+   "transfer_rate": 0.07555555555555556
+  },
+  {
+   "month": "2016-10",
+   "all_rate": 0.019707207207207207,
+   "transfer_rate": 0.07056451612903226
+  },
+  {
+   "month": "2016-11",
+   "all_rate": 0.02440441603718768,
+   "transfer_rate": 0.08879492600422834
+  },
+  {
+   "month": "2016-12",
+   "all_rate": 0.023255813953488372,
+   "transfer_rate": 0.08299595141700405
+  },
+  {
+   "month": "2017-01",
+   "all_rate": 0.020630372492836675,
+   "transfer_rate": 0.07627118644067797
+  },
+  {
+   "month": "2017-02",
+   "all_rate": 0.02540272614622057,
+   "transfer_rate": 0.09151785714285714
+  },
+  {
+   "month": "2017-03",
+   "all_rate": 0.018518518518518517,
+   "transfer_rate": 0.06333973128598848
+  },
+  {
+   "month": "2017-04",
+   "all_rate": 0.02185163887291547,
+   "transfer_rate": 0.079002079002079
+  },
+  {
+   "month": "2017-05",
+   "all_rate": 0.02665910380034033,
+   "transfer_rate": 0.08867924528301886
+  },
+  {
+   "month": "2017-06",
+   "all_rate": 0.026252983293556086,
+   "transfer_rate": 0.09503239740820735
+  },
+  {
+   "month": "2017-07",
+   "all_rate": 0.023085585585585586,
+   "transfer_rate": 0.0803921568627451
+  },
+  {
+   "month": "2017-08",
+   "all_rate": 0.024321266968325792,
+   "transfer_rate": 0.08739837398373984
+  },
+  {
+   "month": "2017-09",
+   "all_rate": 0.022634939059779455,
+   "transfer_rate": 0.08423326133909287
+  },
+  {
+   "month": "2017-10",
+   "all_rate": 0.023798191337458353,
+   "transfer_rate": 0.08635578583765112
+  },
+  {
+   "month": "2017-11",
+   "all_rate": 0.02335766423357664,
+   "transfer_rate": 0.08053691275167785
+  },
+  {
+   "month": "2017-12",
+   "all_rate": 0.021657250470809793,
+   "transfer_rate": 0.07944732297063903
+  },
+  {
+   "month": "2018-01",
+   "all_rate": 0.019312293923692887,
+   "transfer_rate": 0.07256637168141593
+  }
+ ],
+ "top_orders": [
+  {
+   "order_id": 66511,
+   "p": 0.21076701392426786,
+   "action": "STEP_UP",
+   "payment": "TRANSFER",
+   "fraud": false,
+   "value": 127.3899994,
+   "reasons": [
+    {
+     "feature": "is_transfer",
+     "label": "paid by bank transfer",
+     "value": 1.0,
+     "contribution": 5.5219
+    },
+    {
+     "feature": "order_day",
+     "label": "day of month",
+     "value": 28.0,
+     "contribution": 0.3002
+    },
+    {
+     "feature": "n_units",
+     "label": "units ordered",
+     "value": 1.0,
+     "contribution": 0.2864
+    }
+   ]
+  },
+  {
+   "order_id": 68574,
+   "p": 0.19740347457295335,
+   "action": "STEP_UP",
+   "payment": "TRANSFER",
+   "fraud": false,
+   "value": 114.3899994,
+   "reasons": [
+    {
+     "feature": "is_transfer",
+     "label": "paid by bank transfer",
+     "value": 1.0,
+     "contribution": 5.5994
+    },
+    {
+     "feature": "net_total",
+     "label": "order value (USD)",
+     "value": 114.3899994,
+     "contribution": 0.2581
+    },
+    {
+     "feature": "n_units",
+     "label": "units ordered",
+     "value": 1.0,
+     "contribution": 0.2527
+    }
+   ]
+  },
+  {
+   "order_id": 65281,
+   "p": 0.19480461049797695,
+   "action": "STEP_UP",
+   "payment": "TRANSFER",
+   "fraud": false,
+   "value": 680.7300034,
+   "reasons": [
+    {
+     "feature": "is_transfer",
+     "label": "paid by bank transfer",
+     "value": 1.0,
+     "contribution": 5.481
+    },
+    {
+     "feature": "discount_rate_mean",
+     "label": "average discount rate",
+     "value": 0.026666666000000002,
+     "contribution": 0.3768
+    },
+    {
+     "feature": "order_region",
+     "label": "destination region",
+     "value": "Western Europe",
+     "contribution": 0.2412
+    }
+   ]
+  },
+  {
+   "order_id": 67070,
+   "p": 0.19080290607597272,
+   "action": "STEP_UP",
+   "payment": "TRANSFER",
+   "fraud": false,
+   "value": 47.97999954,
+   "reasons": [
+    {
+     "feature": "is_transfer",
+     "label": "paid by bank transfer",
+     "value": 1.0,
+     "contribution": 5.5072
+    },
+    {
+     "feature": "n_units",
+     "label": "units ordered",
+     "value": 1.0,
+     "contribution": 0.2425
+    },
+    {
+     "feature": "order_hour",
+     "label": "hour of order",
+     "value": 1.0,
+     "contribution": 0.2027
+    }
+   ]
+  },
+  {
+   "order_id": 67438,
+   "p": 0.18859220711794303,
+   "action": "STEP_UP",
+   "payment": "TRANSFER",
+   "fraud": false,
+   "value": 367.03999708,
+   "reasons": [
+    {
+     "feature": "is_transfer",
+     "label": "paid by bank transfer",
+     "value": 1.0,
+     "contribution": 5.543
+    },
+    {
+     "feature": "profit_ratio_mean",
+     "label": "profit ratio",
+     "value": 0.299999993,
+     "contribution": 0.1944
+    },
+    {
+     "feature": "discount_total",
+     "label": "discount amount (USD)",
+     "value": 22.900000393,
+     "contribution": 0.1871
+    }
+   ]
+  },
+  {
+   "order_id": 64154,
+   "p": 0.18099879026093418,
+   "action": "STEP_UP",
+   "payment": "TRANSFER",
+   "fraud": false,
+   "value": 659.1200180000001,
+   "reasons": [
+    {
+     "feature": "is_transfer",
+     "label": "paid by bank transfer",
+     "value": 1.0,
+     "contribution": 5.5947
+    },
+    {
+     "feature": "profit_ratio_mean",
+     "label": "profit ratio",
+     "value": -1.0266666413333334,
+     "contribution": 0.2027
+    },
+    {
+     "feature": "discount_rate_mean",
+     "label": "average discount rate",
+     "value": 0.11333333466666666,
+     "contribution": 0.1932
+    }
+   ]
+  },
+  {
+   "order_id": 68650,
+   "p": 0.17768293570678537,
+   "action": "STEP_UP",
+   "payment": "TRANSFER",
+   "fraud": false,
+   "value": 47.47999954,
+   "reasons": [
+    {
+     "feature": "is_transfer",
+     "label": "paid by bank transfer",
+     "value": 1.0,
+     "contribution": 5.4585
+    },
+    {
+     "feature": "n_units",
+     "label": "units ordered",
+     "value": 1.0,
+     "contribution": 0.2525
+    },
+    {
+     "feature": "order_hour",
+     "label": "hour of order",
+     "value": 2.0,
+     "contribution": 0.2167
+    }
+   ]
+  },
+  {
+   "order_id": 62561,
+   "p": 0.17618470722052362,
+   "action": "STEP_UP",
+   "payment": "TRANSFER",
+   "fraud": true,
+   "value": 232.7599945,
+   "reasons": [
+    {
+     "feature": "is_transfer",
+     "label": "paid by bank transfer",
+     "value": 1.0,
+     "contribution": 5.4229
+    },
+    {
+     "feature": "discount_rate_mean",
+     "label": "average discount rate",
+     "value": 0.029999999,
+     "contribution": 0.3346
+    },
+    {
+     "feature": "cust_prior_spend",
+     "label": "customer's earlier spend (USD)",
+     "value": 1250.39998623,
+     "contribution": 0.1944
+    }
+   ]
+  },
+  {
+   "order_id": 67008,
+   "p": 0.17609396717851045,
+   "action": "STEP_UP",
+   "payment": "TRANSFER",
+   "fraud": false,
+   "value": 110.4899979,
+   "reasons": [
+    {
+     "feature": "is_transfer",
+     "label": "paid by bank transfer",
+     "value": 1.0,
+     "contribution": 5.6056
+    },
+    {
+     "feature": "order_hour",
+     "label": "hour of order",
+     "value": 3.0,
+     "contribution": 0.2241
+    },
+    {
+     "feature": "cust_prior_spend",
+     "label": "customer's earlier spend (USD)",
+     "value": 1261.4400139000002,
+     "contribution": 0.183
+    }
+   ]
+  },
+  {
+   "order_id": 62863,
+   "p": 0.17582980323489164,
+   "action": "STEP_UP",
+   "payment": "TRANSFER",
+   "fraud": false,
+   "value": 720.4000092,
+   "reasons": [
+    {
+     "feature": "is_transfer",
+     "label": "paid by bank transfer",
+     "value": 1.0,
+     "contribution": 5.5389
+    },
+    {
+     "feature": "gross_sales",
+     "label": "order value before discount (USD)",
+     "value": 794.9000168,
+     "contribution": 0.2302
+    },
+    {
+     "feature": "order_region",
+     "label": "destination region",
+     "value": "Western Europe",
+     "contribution": 0.2073
+    }
+   ]
+  },
+  {
+   "order_id": 67781,
+   "p": 0.17452771821541924,
+   "action": "STEP_UP",
+   "payment": "TRANSFER",
+   "fraud": false,
+   "value": 587.9700164999999,
+   "reasons": [
+    {
+     "feature": "is_transfer",
+     "label": "paid by bank transfer",
+     "value": 1.0,
+     "contribution": 5.5361
+    },
+    {
+     "feature": "profit_total",
+     "label": "order profit (USD)",
+     "value": 165.12999722,
+     "contribution": 0.3412
+    },
+    {
+     "feature": "discount_rate_mean",
+     "label": "average discount rate",
+     "value": 0.0249999995,
+     "contribution": 0.1651
+    }
+   ]
+  },
+  {
+   "order_id": 66348,
+   "p": 0.17324299733472415,
+   "action": "STEP_UP",
+   "payment": "TRANSFER",
+   "fraud": true,
+   "value": 107.8899994,
+   "reasons": [
+    {
+     "feature": "is_transfer",
+     "label": "paid by bank transfer",
+     "value": 1.0,
+     "contribution": 5.5391
+    },
+    {
+     "feature": "n_units",
+     "label": "units ordered",
+     "value": 1.0,
+     "contribution": 0.2449
+    },
+    {
+     "feature": "cust_prior_spend",
+     "label": "customer's earlier spend (USD)",
+     "value": 3077.9700241299997,
+     "contribution": 0.1959
+    }
+   ]
+  }
+ ],
+ "ledger": {
+  "records": 13670,
+  "verified": true,
+  "tamper_detected": true,
+  "tamper_at": 5,
+  "replay_reproduced": true,
+  "replay_id": "dataco-62477"
+ },
+ "experiments": {
+  "models": [
+   {
+    "label": "leaky model (post-booking columns)",
+    "leaky": true,
+    "all_auc": 0.9895366196443879,
+    "transfer_auc": 0.9597779953073393,
+    "transfer_ci": [
+     0.954169265471756,
+     0.9653611865456032
+    ]
+   },
+   {
+    "label": "rule: flag TRANSFER",
+    "leaky": false,
+    "all_auc": 0.8699296512498129,
+    "transfer_auc": 0.5,
+    "transfer_ci": [
+     0.5,
+     0.5
+    ]
+   },
+   {
+    "label": "honest GBM",
+    "leaky": false,
+    "all_auc": 0.8800858997311624,
+    "transfer_auc": 0.5390413671483867,
+    "transfer_ci": [
+     0.5066069227993611,
+     0.5717523802211197
+    ]
+   },
+   {
+    "label": "honest GBM, no payment_type",
+    "leaky": false,
+    "all_auc": 0.5334278055427585,
+    "transfer_auc": 0.5347092493237487,
+    "transfer_ci": [
+     0.5040774108414559,
+     0.5677061081143147
+    ]
+   },
+   {
+    "label": "GBM + entity graph",
+    "leaky": false,
+    "all_auc": 0.8719097284993109,
+    "transfer_auc": 0.5076115627755444,
+    "transfer_ci": [
+     0.47878683559406754,
+     0.5370454430302142
+    ]
+   },
+   {
+    "label": "IsolationForest",
+    "leaky": false,
+    "all_auc": 0.8731052101617884,
+    "transfer_auc": 0.5122070823307877,
+    "transfer_ci": [
+     0.4775690741802274,
+     0.5461044271853921
+    ]
+   },
+   {
+    "label": "customer drift",
+    "leaky": false,
+    "all_auc": 0.8714026207290689,
+    "transfer_auc": 0.5056622031593263,
+    "transfer_ci": [
+     0.4811367371471906,
+     0.5337387957933608
+    ]
+   }
+  ],
+  "null": {
+   "mean": 0.5014102967659497,
+   "sd": 0.012689391438606746,
+   "lo": 0.480317258978076,
+   "hi": 0.5190158302571996,
+   "real": 0.5219249249024853,
+   "p_value": 0.047619047619047616
+  }
+ }
 }

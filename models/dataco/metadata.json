@@ -1,0 +1,109 @@
+{
+ "model_version": "lightgbm-6d0ec8e2b84f",
+ "feature_version": "dataco-features-2026.10.1",
+ "ruleset_version": "dataco-rules-2026.10.1",
+ "features": [
+  "days_shipment_scheduled",
+  "n_items",
+  "n_units",
+  "n_categories",
+  "n_departments",
+  "gross_sales",
+  "net_total",
+  "discount_total",
+  "discount_rate_max",
+  "discount_rate_mean",
+  "profit_total",
+  "profit_ratio_mean",
+  "max_unit_price",
+  "order_hour",
+  "order_weekday",
+  "order_day",
+  "shipping_mode",
+  "market",
+  "order_region",
+  "customer_segment",
+  "customer_country",
+  "main_department",
+  "main_category",
+  "cust_n_prior",
+  "cust_days_since_last",
+  "cust_prior_spend",
+  "cust_spend_ratio",
+  "cust_orders_7d",
+  "cust_orders_30d",
+  "cust_prior_transfer",
+  "cust_prior_fraud",
+  "cust_prior_cancel",
+  "cust_new_country",
+  "cust_new_city",
+  "is_transfer"
+ ],
+ "thresholds": {
+  "fpr_0_5pct": 0.1590096977474669,
+  "fpr_1pct": 0.14112623383122636,
+  "fpr_2pct": 0.12352021908765759
+ },
+ "training": {
+  "train": 41763,
+  "train_fraud": 941,
+  "calib": 5159,
+  "conformal": 5160,
+  "model_version": "lightgbm-6d0ec8e2b84f"
+ },
+ "alpha": 0.1,
+ "trained_at": "2026-10-03T13:29:47+00:00",
+ "splits": {
+  "train": [
+   "2015-01-01",
+   "2017-01-01"
+  ],
+  "valid": [
+   "2017-01-01",
+   "2017-07-01"
+  ],
+  "test": [
+   "2017-07-01",
+   "2018-02-01"
+  ]
+ },
+ "test_metrics": {
+  "all": {
+   "n": 13670,
+   "fraud": 308,
+   "base_rate": 0.02253108997805413,
+   "roc_auc": 0.8729207852467843,
+   "roc_ci": [
+    0.863377929110238,
+    0.8830966599733412
+   ],
+   "pr_auc": 0.08638929673356703,
+   "pr_ci": [
+    0.07452337965233163,
+    0.10196538924997589
+   ],
+   "pr_lift": 3.8342262543761736,
+   "rec_1": 0.04220779220779221,
+   "rec_5": 0.22402597402597402
+  },
+  "transfer": {
+   "n": 3784,
+   "fraud": 308,
+   "base_rate": 0.08139534883720931,
+   "roc_auc": 0.5114981393750093,
+   "roc_ci": [
+    0.4813475280357714,
+    0.5453526067176242
+   ],
+   "pr_auc": 0.08638929673356702,
+   "pr_ci": [
+    0.07466050561186988,
+    0.10649037361175126
+   ],
+   "pr_lift": 1.0613542170123946,
+   "rec_1": 0.012987012987012988,
+   "rec_5": 0.045454545454545456
+  }
+ },
+ "note": "Inside TRANSFER orders the ranking is close to chance; see notes/comparison-dataco.md."
+}

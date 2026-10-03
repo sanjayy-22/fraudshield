@@ -77,7 +77,7 @@ def _hbar(rows: list[tuple[str, float, str]], title: str, fmt=lambda v: f"{v:,.0
     return f'<figure><figcaption><strong>{html.escape(title)}</strong></figcaption><svg viewBox="0 0 {w} {h}" role="img" aria-label="{html.escape(title)}">{bars}</svg></figure>'
 
 
-def _stacked(by_cohort: dict, w=900) -> str:
+def _stacked(by_cohort: dict, w=900, title: str = "Live decisions by customer cohort") -> str:
     """Action mix per cohort — stacked 100 % bars, 2px surface gap, legend + tooltips."""
     bh, gap, lw = 28, 12, 120
     h = len(by_cohort) * (bh + gap) + 10
@@ -96,8 +96,36 @@ def _stacked(by_cohort: dict, w=900) -> str:
                 out += f'<text class="val on" x="{x + seg / 2:.1f}" y="{yy + bh / 2 + 4}" text-anchor="middle">{a} {100 * counts.get(a, 0) / total:.0f}%</text>'
             x += seg
     legend = "".join(f'<i class="sw s{j + 1}"></i>{a} ' for j, a in enumerate(ACTIONS))
-    return (f'<figure><figcaption><strong>Live decisions by customer cohort</strong> <span class="legend">{legend}</span></figcaption>'
+    return (f'<figure><figcaption><strong>{html.escape(title)}</strong> <span class="legend">{legend}</span></figcaption>'
             f'<svg viewBox="0 0 {w} {h}" role="img" aria-label="action mix by cohort">{out}</svg></figure>')
+
+
+def base_css() -> str:
+    """Shared page CSS: color roles, selected dark mode, tiles, charts, tables."""
+    return f"""
+:root {{ color-scheme: light; --surface:#fcfcfb; --surface-2:#f0efec; --ink:#0b0b0b; --ink-2:#52514e; --ink-3:#8a8984; --grid:#e3e2de;
+  --s1:{SERIES_LIGHT[0]}; --s2:{SERIES_LIGHT[1]}; --s3:{SERIES_LIGHT[2]}; --s4:{SERIES_LIGHT[3]}; --good:{STATUS['good']}; --critical:{STATUS['critical']}; }}
+@media (prefers-color-scheme: dark) {{ :root:not([data-theme="light"]) {{ color-scheme: dark; --surface:#1a1a19; --surface-2:#262624; --ink:#fff; --ink-2:#c3c2b7; --ink-3:#8f8e86; --grid:#383835;
+  --s1:{SERIES_DARK[0]}; --s2:{SERIES_DARK[1]}; --s3:{SERIES_DARK[2]}; --s4:{SERIES_DARK[3]}; }} }}
+:root[data-theme="dark"] {{ color-scheme: dark; --surface:#1a1a19; --surface-2:#262624; --ink:#fff; --ink-2:#c3c2b7; --ink-3:#8f8e86; --grid:#383835;
+  --s1:{SERIES_DARK[0]}; --s2:{SERIES_DARK[1]}; --s3:{SERIES_DARK[2]}; --s4:{SERIES_DARK[3]}; }}
+body {{ margin:0; background:var(--surface); color:var(--ink); font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }}
+main {{ max-width:980px; margin:0 auto; padding:24px 16px 48px; }}
+h1 {{ font-size:22px; margin:0 0 4px; }} h2 {{ font-size:16px; margin:32px 0 8px; }} .sub {{ color:var(--ink-2); font-size:13px; }}
+.tiles {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin:18px 0; }}
+.tile {{ background:var(--surface-2); border-radius:10px; padding:14px 16px; }} .tile .k {{ font-size:13px; color:var(--ink-2); }} .tile .v {{ font-size:28px; font-weight:600; margin:4px 0 2px; }}
+figure {{ margin:14px 0 0; }} figcaption {{ margin-bottom:6px; }} svg {{ width:100%; height:auto; display:block; }}
+.legend {{ font-size:13px; color:var(--ink-2); margin-left:10px; }} .sw {{ display:inline-block; width:12px; height:12px; border-radius:3px; margin:0 4px 0 8px; vertical-align:-1px; }}
+.s1 {{ fill:var(--s1); background:var(--s1); }} .s2 {{ fill:var(--s2); background:var(--s2); }} .s3 {{ fill:var(--s3); background:var(--s3); }} .s4 {{ fill:var(--s4); background:var(--s4); }}
+.line {{ fill:none; stroke-width:2px; }} .line.s1 {{ stroke:var(--s1); }} .line.s2 {{ stroke:var(--s2); }}
+.ring {{ stroke:var(--surface); stroke-width:2px; }} .grid {{ stroke:var(--grid); stroke-width:1px; }}
+.tick, .lbl, .val {{ font-size:12px; fill:var(--ink-2); }} .lbl {{ fill:var(--ink); }} .val.on {{ fill:#fff; font-size:11px; }}
+.bar:hover rect, .seg:hover {{ opacity:.85; }}
+table {{ border-collapse:collapse; width:100%; font-size:13px; margin-top:6px; }} th, td {{ text-align:left; padding:6px 8px; border-bottom:1px solid var(--grid); }} th {{ color:var(--ink-2); font-weight:500; }}
+details {{ margin-top:6px; font-size:13px; color:var(--ink-2); }}
+.sample {{ background:var(--surface-2); border-radius:10px; padding:12px 14px; margin:10px 0; }} .sample .k {{ font-weight:600; }} .sample p {{ margin:6px 0; }}
+.ok {{ color:var(--good); font-weight:600; }} .bad {{ color:var(--critical); font-weight:600; }}
+"""
 
 
 def render_dashboard(s: dict) -> str:
@@ -123,30 +151,7 @@ def render_dashboard(s: dict) -> str:
     pol_tbl = "".join(f"<tr><td>{p['policy']}</td><td>{p['realised cost ₹']:,}</td><td>{p['fraud stopped']}</td><td>{p['legit blocked']}</td><td>{p['legit asked to verify']}</td><td>{p['reviews']}</td><td>{p['ALLOW/STEP_UP/HOLD/BLOCK']}</td></tr>" for p in s["policies"])
     sens = "".join(f"<tr><td>{r['charge']}</td><td>{r['p']}</td><td>{r['individual']}</td><td>{r['sme']}</td><td>{r['ecommerce']}</td></tr>" for r in s["sensitivity"])
 
-    css = f"""
-:root {{ color-scheme: light; --surface:#fcfcfb; --surface-2:#f0efec; --ink:#0b0b0b; --ink-2:#52514e; --ink-3:#8a8984; --grid:#e3e2de;
-  --s1:{SERIES_LIGHT[0]}; --s2:{SERIES_LIGHT[1]}; --s3:{SERIES_LIGHT[2]}; --s4:{SERIES_LIGHT[3]}; --good:{STATUS['good']}; --critical:{STATUS['critical']}; }}
-@media (prefers-color-scheme: dark) {{ :root:not([data-theme="light"]) {{ color-scheme: dark; --surface:#1a1a19; --surface-2:#262624; --ink:#fff; --ink-2:#c3c2b7; --ink-3:#8f8e86; --grid:#383835;
-  --s1:{SERIES_DARK[0]}; --s2:{SERIES_DARK[1]}; --s3:{SERIES_DARK[2]}; --s4:{SERIES_DARK[3]}; }} }}
-:root[data-theme="dark"] {{ color-scheme: dark; --surface:#1a1a19; --surface-2:#262624; --ink:#fff; --ink-2:#c3c2b7; --ink-3:#8f8e86; --grid:#383835;
-  --s1:{SERIES_DARK[0]}; --s2:{SERIES_DARK[1]}; --s3:{SERIES_DARK[2]}; --s4:{SERIES_DARK[3]}; }}
-body {{ margin:0; background:var(--surface); color:var(--ink); font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }}
-main {{ max-width:980px; margin:0 auto; padding:24px 16px 48px; }}
-h1 {{ font-size:22px; margin:0 0 4px; }} h2 {{ font-size:16px; margin:32px 0 8px; }} .sub {{ color:var(--ink-2); font-size:13px; }}
-.tiles {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin:18px 0; }}
-.tile {{ background:var(--surface-2); border-radius:10px; padding:14px 16px; }} .tile .k {{ font-size:13px; color:var(--ink-2); }} .tile .v {{ font-size:28px; font-weight:600; margin:4px 0 2px; }}
-figure {{ margin:14px 0 0; }} figcaption {{ margin-bottom:6px; }} svg {{ width:100%; height:auto; display:block; }}
-.legend {{ font-size:13px; color:var(--ink-2); margin-left:10px; }} .sw {{ display:inline-block; width:12px; height:12px; border-radius:3px; margin:0 4px 0 8px; vertical-align:-1px; }}
-.s1 {{ fill:var(--s1); background:var(--s1); }} .s2 {{ fill:var(--s2); background:var(--s2); }} .s3 {{ fill:var(--s3); background:var(--s3); }} .s4 {{ fill:var(--s4); background:var(--s4); }}
-.line {{ fill:none; stroke-width:2px; }} .line.s1 {{ stroke:var(--s1); }} .line.s2 {{ stroke:var(--s2); }}
-.ring {{ stroke:var(--surface); stroke-width:2px; }} .grid {{ stroke:var(--grid); stroke-width:1px; }}
-.tick, .lbl, .val {{ font-size:12px; fill:var(--ink-2); }} .lbl {{ fill:var(--ink); }} .val.on {{ fill:#fff; font-size:11px; }}
-.bar:hover rect, .seg:hover {{ opacity:.85; }}
-table {{ border-collapse:collapse; width:100%; font-size:13px; margin-top:6px; }} th, td {{ text-align:left; padding:6px 8px; border-bottom:1px solid var(--grid); }} th {{ color:var(--ink-2); font-weight:500; }}
-details {{ margin-top:6px; font-size:13px; color:var(--ink-2); }}
-.sample {{ background:var(--surface-2); border-radius:10px; padding:12px 14px; margin:10px 0; }} .sample .k {{ font-weight:600; }} .sample p {{ margin:6px 0; }}
-.ok {{ color:var(--good); font-weight:600; }} .bad {{ color:var(--critical); font-weight:600; }}
-"""
+    css = base_css()
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FraudShield Replay</title><style>{css}</style></head><body><main>
 <h1>FraudShield — booking-time fraud screening, live replay</h1>

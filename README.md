@@ -38,10 +38,26 @@ python3 visuals/make_architecture.py
 # real data (DataCo): needs prototypes/data/cleaned_dataco.csv
 python3 -m pytest tests/ -q
 for e in experiments/e*-dataco-*/; do python3 $e/run.py; done
-python3 prototypes/fraudshield-pipeline/demo_dataco.py   # writes results_dataco.md, stats_dataco.json
+python3 prototypes/fraudshield-pipeline/demo_dataco.py   # writes results_dataco.md, stats_dataco.json, visuals/dashboard_dataco.html
 python3 visuals/make_dataco_charts.py
 cd prototypes/fraudshield-pipeline && uvicorn api:app --port 8080   # POST /score, GET /explain/{id}, POST /feedback
 ```
+
+## Booking desk demo (model → backend → frontend)
+
+```bash
+python3 prototypes/fraudshield-pipeline/train_dataco.py        # 1. model: train once → models/dataco/ (already committed)
+cd prototypes/fraudshield-pipeline
+uvicorn api_dataco:app --port 8081                             # 2. backend (terminal 1), loads the saved model
+python3 -m http.server 5173 --directory ../../frontend         # 3. frontend (terminal 2) → http://127.0.0.1:5173
+bash demo_requests.sh                                          #    optional: scripted API calls instead of the UI
+```
+
+Example buttons on the form fill in orders that reach each outcome: a debit card order is confirmed with a
+tracking ID and label; a bank transfer from a returning customer goes to the analyst queue (approve → tracking ID,
+reject → blocked); a bulk discounted transfer asks for a one-time code (three wrong codes → blocked). The model
+never chooses BLOCK by itself on DataCo (its highest score is about 21%), so blocks come from failed verification
+or an analyst rejection. The demo shows the one-time code on screen because there is no SMS gateway.
 
 Each run regenerates the synthetic stream deterministically (seed 7). LightGBM is optional —
 the code falls back to scikit-learn's histogram GBM.
@@ -69,5 +85,5 @@ Reported separately: these are not comparable with the synthetic numbers above.
 | Why | every fraud order is TRANSFER; inside TRANSFER no feature, entity link or anomaly score separates fraud |
 | Pipeline replay | ledger verified, tamper detected, replay reproduced. The cost-sensitive policy is cheapest under stated, simulated cost assumptions, because of how it chooses actions rather than better ranking |
 
-Details: `notes/comparison-dataco.md`.
+Details: `notes/comparison-dataco.md`. Presentation outline and demo steps: `notes/presentation-outline.md`.
 

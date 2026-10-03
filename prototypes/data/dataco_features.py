@@ -208,6 +208,53 @@ def add_entity(o: pd.DataFrame) -> pd.DataFrame:
     return o
 
 
+# ------------------------------------------------------------------ live path: one new order at a time
+ORDER_HEADER = ["order_id", "ts", "customer_id", "payment_type", "shipping_mode", "days_shipment_scheduled", "market",
+                "order_region", "order_country", "order_city", "customer_segment", "customer_country", "customer_city"]
+ITEM_FIELDS = ["quantity", "unit_price", "discount", "discount_rate", "profit", "profit_ratio", "category",
+               "department", "product_id"]
+
+
+def order_from_items(header: dict, items: list[dict]) -> dict:
+    """Booking-time order row from a raw order (header + items), matching `to_orders()` aggregation.
+    Item amounts are taken as given, because DataCo's discount and profit are not exactly rate × amount."""
+    it = pd.DataFrame(items)
+    sales = it.quantity * it.unit_price
+    net = sales - it.discount
+    main = int(np.argmax(net.values))
+    ts = pd.Timestamp(header["ts"])
+    row = {k: header[k] for k in ORDER_HEADER if k in header}
+    row.update(
+        ts=ts, n_items=len(it), n_units=float(it.quantity.sum()), n_categories=it.category.nunique(),
+        n_departments=it.department.nunique(), gross_sales=float(sales.sum()), net_total=float(net.sum()),
+        discount_total=float(it.discount.sum()), discount_rate_max=float(it.discount_rate.max()),
+        discount_rate_mean=float(it.discount_rate.mean()), profit_total=float(it.profit.sum()),
+        profit_ratio_mean=float(it.profit_ratio.mean()), max_unit_price=float(it.unit_price.max()),
+        main_department=it.department.iloc[main], main_category=it.category.iloc[main],
+        main_product=it.product_id.iloc[main] if "product_id" in it else -1,
+        order_hour=ts.hour, order_weekday=ts.weekday(), order_day=ts.day,
+        is_transfer=int(header["payment_type"] == "TRANSFER"),
+    )
+    return row
+
+
+_HIST_INPUT = ["customer_id", "ts", "net_total", "is_transfer", "is_fraud", "is_cancel", "order_country", "order_city"]
+
+
+def history_for(known: pd.DataFrame, order: dict) -> dict:
+    """Point-in-time history features for one new order, given the orders already known.
+    Runs the batch `add_history()` on the customer's earlier orders + this one, so live and batch
+    features are computed by the same code. The new order's own outcome is unknown (set to 0) and
+    can never reach its features, because every history window ends strictly before `ts`."""
+    ts = pd.Timestamp(order["ts"])
+    prior = known[(known.customer_id == order["customer_id"]) & (known.ts < ts)][_HIST_INPUT]
+    new = pd.DataFrame([{**{c: order.get(c) for c in _HIST_INPUT}, "ts": ts, "is_fraud": 0, "is_cancel": 0}])
+    frame = pd.concat([prior, new], ignore_index=True)
+    frame["ts"] = frame.ts.astype("datetime64[ns]")
+    frame = frame.sort_values("ts", kind="stable").reset_index(drop=True)
+    return {c: float(v) for c, v in add_history(frame).iloc[-1][HISTORY_COLS].items()}
+
+
 def build_orders(path: str | Path = DATA_PATH, entity: bool = True) -> pd.DataFrame:
     o = add_history(to_orders(load_items(path)))
     if entity:

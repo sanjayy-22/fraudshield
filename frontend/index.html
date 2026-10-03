@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FraudShield Booking Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="mark" aria-hidden="true"></span>
+    <div>
+      <h1>FraudShield Booking Desk</h1>
+      <p class="muted">Place an order, confirm it, and see how the fraud check handles it.</p>
+    </div>
+  </div>
+  <div class="meta">
+    <span class="chip" id="clock" title="Dataset clock: starts the day after the DataCo data ends and runs in real time">clock —</span>
+    <span class="chip" id="api-status"><span class="dot" id="api-dot"></span><span id="api-text">connecting…</span></span>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" id="tab-new" aria-selected="true" data-tab="new">New booking</button>
+  <button role="tab" id="tab-mine" aria-selected="false" data-tab="mine">My bookings <span class="count" id="count-mine">0</span></button>
+  <button role="tab" id="tab-review" aria-selected="false" data-tab="review">Review queue <span class="count" id="count-review">0</span></button>
+</nav>
+
+<main>
+  <!-- ============================== NEW BOOKING -->
+  <section class="panel-grid" id="view-new" role="tabpanel" aria-labelledby="tab-new">
+    <form id="booking-form" novalidate>
+      <div class="samples">
+        <span class="muted">Fill with an example:</span>
+        <button type="button" class="link" data-sample="regular">Returning customer, debit card</button>
+        <button type="button" class="link" data-sample="transfer">Returning customer, bank transfer</button>
+        <button type="button" class="link" data-sample="new">New customer, bank transfer</button>
+        <button type="button" class="link" data-sample="risky">Bulk discounted order, bank transfer</button>
+      </div>
+
+      <fieldset>
+        <legend>Customer</legend>
+        <div class="seg" role="radiogroup" aria-label="Customer type">
+          <label><input type="radio" name="ctype" value="existing" id="ctype-existing" checked> Existing customer</label>
+          <label><input type="radio" name="ctype" value="new" id="ctype-new"> New customer</label>
+        </div>
+        <div id="existing-box" class="row">
+          <div class="field">
+            <label for="customer_id">Customer ID</label>
+            <input id="customer_id" inputmode="numeric" placeholder="e.g. 12366">
+          </div>
+          <button type="button" class="secondary" id="lookup">Look up</button>
+          <p class="hint" id="customer-info">Enter an ID from the DataCo data, between 1 and 20757.</p>
+        </div>
+        <div id="new-box" class="row" hidden>
+          <div class="field">
+            <label for="customer_segment">Segment</label>
+            <select id="customer_segment"></select>
+          </div>
+          <div class="field">
+            <label for="customer_country">Home country</label>
+            <select id="customer_country"></select>
+          </div>
+          <div class="field grow">
+            <label for="customer_city">Home city</label>
+            <input id="customer_city" placeholder="e.g. Caguas">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Delivery</legend>
+        <div class="row">
+          <div class="field grow">
+            <label for="order_country">Destination country</label>
+            <input id="order_country" list="country-list" placeholder="Start typing, e.g. Francia" autocomplete="off">
+            <datalist id="country-list"></datalist>
+          </div>
+          <div class="field grow">
+            <label for="order_city">Destination city</label>
+            <input id="order_city" list="city-list" placeholder="e.g. Paris" autocomplete="off">
+            <datalist id="city-list"></datalist>
+          </div>
+        </div>
+        <p class="hint" id="geo-hint">Country names follow the DataCo data, which is in Spanish (Francia, Alemania, Estados Unidos…).</p>
+        <div class="field">
+          <label for="shipping_mode">Shipping service</label>
+          <select id="shipping_mode"></select>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Items</legend>
+        <div class="items-head" aria-hidden="true">
+          <span>Product</span><span>Qty</span><span>Discount</span><span class="num">Line total</span><span></span>
+        </div>
+        <div id="items"></div>
+        <div class="row between">
+          <button type="button" class="link" id="add-item">+ Add item</button>
+          <p class="total">Order total <strong id="order-total">$0.00</strong></p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Payment</legend>
+        <div class="pay" id="pay-options"></div>
+      </fieldset>
+
+      <p class="error" id="form-error" role="alert" hidden></p>
+      <div class="actions">
+        <button type="submit" class="primary" id="review-btn">Review booking</button>
+      </div>
+    </form>
+
+    <aside class="result" id="result" aria-live="polite">
+      <div class="empty" id="result-empty">
+        <h2>No booking yet</h2>
+        <p class="muted">Fill in the form and confirm. The result appears here:</p>
+        <ul class="legend">
+          <li><span class="pill CONFIRMED">Confirmed</span> tracking ID and shipping label</li>
+          <li><span class="pill VERIFICATION_REQUIRED">Verify</span> customer enters a one-time code</li>
+          <li><span class="pill UNDER_REVIEW">Under review</span> waits for an analyst</li>
+          <li><span class="pill BLOCKED">Blocked</span> reference number, no shipment</li>
+        </ul>
+      </div>
+      <div id="result-body" hidden></div>
+    </aside>
+  </section>
+
+  <!-- ============================== MY BOOKINGS -->
+  <section id="view-mine" role="tabpanel" aria-labelledby="tab-mine" hidden>
+    <div class="table-wrap">
+      <table class="list">
+        <thead><tr><th>Booking</th><th>Placed</th><th>Customer</th><th>Payment</th><th>To</th><th class="num">Total</th><th>Status</th><th>Tracking / reference</th></tr></thead>
+        <tbody id="mine-rows"></tbody>
+      </table>
+    </div>
+    <p class="muted" id="mine-empty">No bookings yet. They are kept in the server's memory until it restarts.</p>
+  </section>
+
+  <!-- ============================== REVIEW QUEUE -->
+  <section id="view-review" role="tabpanel" aria-labelledby="tab-review" hidden>
+    <p class="muted">Bookings the model was unsure about. Approving issues a tracking ID; rejecting blocks the booking.</p>
+    <div id="queue" class="queue"></div>
+    <p class="muted" id="queue-empty">Nothing waiting for review.</p>
+  </section>
+</main>
+
+<dialog id="confirm-dialog" aria-labelledby="confirm-title">
+  <form method="dialog" id="confirm-form">
+    <h2 id="confirm-title">Confirm this booking?</h2>
+    <dl id="confirm-summary" class="summary"></dl>
+    <div class="actions">
+      <button value="cancel" class="secondary" id="confirm-cancel">Edit</button>
+      <button value="ok" class="primary" id="confirm-ok">Confirm booking</button>
+    </div>
+  </form>
+</dialog>
+
+<template id="item-row">
+  <div class="item">
+    <select class="product" aria-label="Product"></select>
+    <input class="qty" type="number" min="1" max="5" value="1" aria-label="Quantity">
+    <select class="disc" aria-label="Discount"></select>
+    <span class="line num">$0.00</span>
+    <button type="button" class="icon remove" aria-label="Remove item">×</button>
+  </div>
+</template>
+
+<script src="app.js"></script>
+</body>
+</html>

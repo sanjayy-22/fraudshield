@@ -105,3 +105,38 @@ def test_future_labels_do_not_change_past_features(orders):
     early = (a.ts < cut).values
     cols = F.HISTORY_COLS + F.ENTITY_COLS
     pd.testing.assert_frame_equal(a.loc[early, cols].reset_index(drop=True), b.loc[early, cols].reset_index(drop=True))
+
+
+# ------------------------------------------------------------------ live path (one order at a time)
+def test_history_for_matches_batch(orders):
+    """Live features for a new order equal the batch point-in-time features."""
+    _, _, te = F.split(orders)
+    known = orders[orders.ts < pd.Timestamp(F.SPLITS["test"][0])]
+    sample = te.sample(100, random_state=3)
+    for _, r in sample.iterrows():
+        prior = orders[(orders.customer_id == r.customer_id) & (orders.ts < r.ts)]
+        known_now = pd.concat([known, prior]).drop_duplicates("order_id")
+        live = F.history_for(known_now, r.to_dict())
+        for c in F.HISTORY_COLS:
+            assert np.isclose(live[c], r[c]), (r.order_id, c, live[c], r[c])
+
+
+def test_order_from_items_matches_rollup(items, orders):
+    """Rebuilding an order from raw items (as the API does) reproduces the batch order row."""
+    by_id = orders.set_index("order_id")
+    for oid in items.order_id.drop_duplicates().sample(60, random_state=4):
+        it = items[items.order_id == oid]
+        h = it.iloc[0]
+        header = dict(order_id=oid, ts=h.order_date, customer_id=h.customer_id, payment_type=h.payment_type,
+                      shipping_mode=h.shipping_mode, days_shipment_scheduled=h.days_shipment_scheduled, market=h.market,
+                      order_region=h.order_region, order_country=h.order_country, order_city=h.order_city,
+                      customer_segment=h.customer_segment, customer_country=h.customer_country, customer_city=h.customer_city)
+        raw = [dict(quantity=x.order_item_quantity, unit_price=x.order_item_product_price, discount=x.order_item_discount,
+                    discount_rate=x.order_item_discount_rate, profit=x.order_profit_per_order,
+                    profit_ratio=x.order_item_profit_ratio, category=x.category_name, department=x.department_name,
+                    product_id=x.product_card_id) for x in it.itertuples()]
+        row, ref = F.order_from_items(header, raw), by_id.loc[oid]
+        for c in F.BASE_NUM_COLS + F.PAYMENT_COLS:
+            assert np.isclose(row[c], ref[c], atol=0.02), (oid, c, row[c], ref[c])
+        for c in F.CAT_COLS:
+            assert row[c] == ref[c], (oid, c)
