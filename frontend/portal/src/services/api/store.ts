@@ -1,4 +1,4 @@
-import type { User, Shipment, ShipmentDraft, Notice, Price, Risk, RiskLevel, ReviewStatus } from '../../types';
+import type { User, Shipment, ShipmentDraft, Notice, Price, Risk, RiskLevel, ReviewStatus, PaymentReceipt } from '../../types';
 
 export const today = () => new Date().toISOString().slice(0, 10);
 export const dateAfter = (days: number, from = new Date()) => { const date = new Date(from); date.setDate(date.getDate() + days); return date.toISOString(); };
@@ -12,32 +12,31 @@ export function priceFor(d: ShipmentDraft): Price {
   return { shipping, pickup, protection, discount, total: shipping + pickup + protection - discount };
 }
 export const riskLevel = (score: number): RiskLevel => score < 30 ? 'LOW' : score < 60 ? 'MEDIUM' : score < 80 ? 'HIGH' : 'CRITICAL';
-// Demo-only, deterministic scoring. This is not the trained Python model.
-// One centralized formula: 40% normalized rule score + 60% simulated model probability.
+// Central review-priority formula. The caller replaces sample evidence with saved-model output for new bookings.
 export function buildRisk(ai: number, flags: boolean[]): Risk {
   const catalog = [
-    { name: 'New account', points: 10, description: 'Limited established shipping history.' },
-    { name: 'Unusual shipment value', points: 15, description: 'Declared value is above this account’s usual range.' },
+    { name: 'New account', points: 10, description: 'The account was created less than 30 days before booking.' },
+    { name: 'Unusual shipment value', points: 15, description: 'Contents value is at least ₹50,000, and either exceeds three times the previous average or has no prior history for comparison.' },
     { name: 'New device', points: 10, description: 'This device has not been verified on this account.' },
-    { name: 'Multiple addresses', points: 5, description: 'Several recently added destinations need context.' },
+    { name: 'Multiple addresses', points: 5, description: 'At least four destination cities appear across this booking and the previous seven days.' },
   ];
   const factors = catalog.filter((_, i) => flags[i]);
   const ruleScore = factors.reduce((sum, f) => sum + f.points, 0);
   const overall = Math.round(0.4 * (ruleScore / 40 * 100) + 0.6 * ai);
   const shap = [...factors.map((f, i) => ({ name: f.name, value: [0.31, 0.22, 0.16, 0.09][i] })), { name: 'Established history', value: -0.05 }];
-  return { overall, level: riskLevel(overall), ruleScore, ruleMax: 40, ai, factors, shap, model: 'LightGBM · simulated output' };
+  return { overall, level: riskLevel(overall), ruleScore, ruleMax: 40, ai, factors, shap, model: 'LightGBM · simulated output', source: 'simulated' };
 }
 export const locations = ['Chennai', 'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Pune', 'Kolkata', 'Coimbatore'];
 export const dropoffs = [{ name: 'Adyar shipping studio', address: '12, LB Road, Adyar, Chennai', hours: '9 AM – 8 PM' }, { name: 'T. Nagar service point', address: '45, North Usman Road, Chennai', hours: '9 AM – 7 PM' }, { name: 'Velachery collection hub', address: '8, Main Road, Velachery, Chennai', hours: '8 AM – 9 PM' }];
-type Store = { users: User[]; shipments: Shipment[]; notices: Notice[] };
+type Store = { users: User[]; shipments: Shipment[]; notices: Notice[]; payments: PaymentReceipt[] };
 const KEY = 'fraudshield-portal-v1';
 function seed(): Store {
   const names = ['Aarav Mehta', 'Diya Nair', 'Rohan Kapoor', 'Ananya Rao', 'Vihaan Shah', 'Ishaan Das', 'Kavya Iyer', 'Arjun Menon', 'Meera Patel', 'Aditya Sen', 'Sana Ali', 'Dev Khanna', 'Nisha Joshi', 'Rehan Khan', 'Tara Bose', 'Kabir Sethi', 'Zoya Mirza', 'Neel Verma', 'Aditi Jain', 'Riya Bhat', 'Kunal Roy', 'Avni Gupta', 'Nikhil Suri', 'Leela Nair'];
   const users: User[] = names.map((name, i) => ({ id: `USR${String(i + 1).padStart(3, '0')}`, name, email: `${name.toLowerCase().replaceAll(' ', '.')}@example.com`, phone: `900000${String(i).padStart(4, '0')}`, city: locations[i % 8], company: i === 0 ? 'Studio Mehta' : `${name.split(' ')[0]} Studio`, joined: dateAfter(-400 + i * 15), role: 'USER' }));
   users[0].email = 'aarav@example.com';
   users.push({ id: 'ADM001', name: 'Priya Sharma', email: 'admin@example.com', phone: '9000009999', city: 'Chennai', company: 'FraudShield Operations', joined: dateAfter(-600), role: 'ADMIN' });
-  const statuses: ReviewStatus[] = ['Suspicious', 'Under Review', 'On Hold', 'Approved', 'Approved', 'Blocked', 'Approved', 'Under Review'];
-  const deliveries = ['In Transit', 'Created', 'Picked Up', 'Delivered', 'Out for Delivery', 'Created', 'Delivered', 'Delayed'] as const;
+  const statuses: ReviewStatus[] = ['Awaiting Approval', 'Awaiting Approval', 'On Hold', 'Approved', 'Approved', 'Blocked', 'Approved', 'Awaiting Approval'];
+  const deliveries = ['Created', 'Created', 'Created', 'Delivered', 'In Transit', 'Created', 'Delivered', 'Created'] as const;
   const shipments: Shipment[] = Array.from({ length: 64 }, (_, i) => {
     const owner = users[i < 12 ? 0 : (i % 23) + 1];
     const band = i % 8;
@@ -45,24 +44,50 @@ function seed(): Store {
     const risk = band === 0 ? buildRisk(85, [true, true, true, true]) : band === 1 ? buildRisk(72, [true, true, true, false]) : band === 2 ? buildRisk(55, [false, true, true, false]) : band === 5 ? buildRisk(94, [true, true, true, true]) : band === 7 ? buildRisk(38, [false, true, false, false]) : buildRisk(9 + i % 12, [false, false, false, false]);
     const created = dateAfter(-Math.floor(i / 4));
     const id = `FS${84729103 + i}`;
-    return { id, userId: owner.id, created, expected: dateAfter(3 - i % 6), location: `${d.receiver.city} sorting facility`, delivery: deliveries[band], status: statuses[band], draft: d, price: priceFor(d), risk, audit: ['Approved', 'Blocked', 'On Hold'].includes(statuses[band]) ? [{ id: `AUD${i}`, shipmentId: id, decision: statuses[band], admin: 'Priya Sharma', reason: statuses[band] === 'Approved' ? 'Verified customer' : statuses[band] === 'Blocked' ? 'Suspicious activity confirmed' : 'Other', notes: 'Demonstration review record. Evidence retained for follow-up.', at: dateAfter(-Math.floor(i / 4) + 0.01) }] : [] };
+    return { id, userId: owner.id, created, expected: dateAfter(3 - i % 6), location: statuses[band] === 'Approved' ? `${d.receiver.city} sorting facility` : d.sender.city, delivery: deliveries[band], status: statuses[band], draft: d, price: priceFor(d), risk, revision: 1, payment: { status: 'Paid', mode: 'demo', reference: `DEMO-${id}`, amount: priceFor(d).total, paidAt: created, userId: owner.id, submissionId: id, draftKey: JSON.stringify(d) }, ...(statuses[band] === 'Approved' ? { approvedAt: created, dispatchedAt: created } : {}), audit: ['Approved', 'Blocked', 'On Hold'].includes(statuses[band]) ? [{ id: `AUD${i}`, shipmentId: id, decision: statuses[band], admin: 'Priya Sharma', reason: statuses[band] === 'Approved' ? 'Verified customer' : statuses[band] === 'Blocked' ? 'Suspicious activity confirmed' : 'Other', notes: 'Demonstration review record. Evidence retained for follow-up.', at: dateAfter(-Math.floor(i / 4) + 0.01) }] : [] };
   });
   const notices: Notice[] = [
-    { title: 'Your shipment is on its way', body: 'Your Chennai → Mumbai shipment has left the origin facility. Follow every step of its journey.', type: 'shipment', shipmentId: shipments[0].id },
+    { title: 'Awaiting admin approval', body: 'Payment is complete. Your booking is waiting for review before shipping can begin.', type: 'shipment', shipmentId: shipments[0].id },
     { title: 'A quick verification is needed', body: 'Please review the details of your latest shipment. Our team will contact you through your registered details.', type: 'verification', shipmentId: shipments[1].id },
-    { title: 'Delivery taking a little longer', body: 'A local transit delay has affected your shipment. We will keep you updated.', type: 'delay', shipmentId: shipments[7].id },
-    { title: 'Pickup reminder', body: 'Have your package sealed and ready for collection between 10 AM and 12 PM.', type: 'reminder', shipmentId: shipments[2].id },
+    { title: 'Your booking is awaiting review', body: 'Your package will remain with you until an administrator approves shipping.', type: 'reminder', shipmentId: shipments[7].id },
+    { title: 'Booking placed on hold', body: 'Your package is held for additional review. Pickup is not authorized yet.', type: 'verification', shipmentId: shipments[2].id },
     { title: 'Payment confirmed', body: 'Your demo payment has been received. Your receipt is available in shipment details.', type: 'payment', shipmentId: shipments[3].id },
     { title: 'Delivered, with care', body: 'Your parcel has arrived at its destination. Thank you for shipping with FraudShield.', type: 'shipment', shipmentId: shipments[3].id },
   ].map((n, i) => ({ ...n, type: n.type as Notice['type'], id: `MSG${i}`, userId: users[0].id, at: dateAfter(-i), read: i > 2 }));
-  return { users, shipments, notices };
+  return { users, shipments, notices, payments: shipments.map(s => s.payment) };
 }
 let memory: Store | undefined;
+let lastStored: string | null | undefined;
+function migrate(store: Store): Store {
+  store.payments ||= [];
+  for (const shipment of store.shipments) {
+    if (['Under Review', 'Suspicious'].includes(shipment.status as string)) shipment.status = 'Awaiting Approval';
+    shipment.risk.source ||= 'simulated';
+    shipment.revision ||= 1;
+    shipment.payment ||= { status: 'Paid', mode: 'demo', reference: `DEMO-${shipment.id}`, amount: shipment.price.total, paidAt: shipment.created, userId: shipment.userId, submissionId: shipment.id, draftKey: JSON.stringify(shipment.draft) };
+    if (shipment.status !== 'Approved' && !shipment.dispatchedAt) { shipment.delivery = 'Created'; shipment.location = shipment.draft.sender.city; }
+    if (shipment.status === 'Approved') {
+      shipment.approvedAt ||= shipment.audit.find(a => a.decision === 'Approved')?.at || shipment.created;
+      if (shipment.delivery !== 'Created') shipment.dispatchedAt ||= shipment.approvedAt;
+    }
+  }
+  return store;
+}
 export function db(): Store {
-  if (memory) return memory;
-  try { const raw = localStorage.getItem(KEY); if (raw) memory = JSON.parse(raw); } catch { /* private browsing or old data */ }
+  try { const raw = localStorage.getItem(KEY); if (!memory || raw !== lastStored) { memory = raw ? migrate(JSON.parse(raw)) : seed(); lastStored = raw; } } catch { /* private browsing or old data */ }
   if (!memory?.users || !memory?.shipments || !memory?.notices) memory = seed();
   return memory;
 }
-export function save() { localStorage.setItem(KEY, JSON.stringify(db())); }
+export function save() { const raw = JSON.stringify(db()); localStorage.setItem(KEY, raw); lastStored = raw; if (typeof window !== 'undefined') window.dispatchEvent(new Event('fraudshield-store-updated')); }
+export async function transaction<T>(fn: (store: Store) => T): Promise<T> {
+  const run = () => { const result = fn(db()); save(); return structuredClone(result); };
+  if (typeof navigator !== 'undefined' && navigator.locks) return navigator.locks.request('fraudshield-store-write', run);
+  return run();
+}
+export function subscribeStore(callback: () => void) {
+  if (typeof window === 'undefined') return () => {};
+  const changed = (event: Event) => { if (event.type === 'storage' && (event as StorageEvent).key !== KEY) return; callback(); };
+  window.addEventListener('storage', changed); window.addEventListener('fraudshield-store-updated', changed);
+  return () => { window.removeEventListener('storage', changed); window.removeEventListener('fraudshield-store-updated', changed); };
+}
 export async function respond<T>(value: T): Promise<T> { await new Promise(resolve => setTimeout(resolve, 160)); return structuredClone(value); }

@@ -1,0 +1,21 @@
+FROM python:3.14-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/prototypes/fraudshield-pipeline:/app/prototypes/data
+
+WORKDIR /app
+COPY requirements-portal.txt /app/requirements-portal.txt
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir -r /app/requirements-portal.txt
+
+COPY prototypes/fraudshield-pipeline/api_portal.py /app/prototypes/fraudshield-pipeline/api_portal.py
+COPY prototypes/fraudshield-pipeline/fraudshield /app/prototypes/fraudshield-pipeline/fraudshield
+COPY prototypes/data/dataco_features.py /app/prototypes/data/dataco_features.py
+COPY models/dataco/fraudshield_dataco.pkl /app/models/dataco/fraudshield_dataco.pkl
+COPY models/dataco/metadata.json /app/models/dataco/metadata.json
+
+EXPOSE 8082
+CMD ["uvicorn", "api_portal:app", "--app-dir", "/app/prototypes/fraudshield-pipeline", "--host", "0.0.0.0", "--port", "8082"]

@@ -1,10 +1,11 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback, type ReactNode, type ComponentType } from 'react';
 import { Check, X, PackageSearch, ArrowUpRight, AlertCircle, LoaderCircle } from 'lucide-react';
+import { subscribeStore } from '../../services/api/store';
 export const money = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
 export const date = (s: string, full = false) => new Date(s).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', ...(full ? { year: 'numeric' as const } : {}) });
 export const initials = (s: string) => s.split(' ').map(x => x[0]).slice(0, 2).join('');
 export function Badge({ children, tone = '' }: { children: ReactNode; tone?: string }) { return <span className={`badge ${tone || String(children).toLowerCase().replaceAll(' ', '-')}`}><span className="badge-dot"/>{children}</span>; }
-export function RiskBadge({ score, level }: { score: number; level: string }) { return <div className="risk-badge"><span className={`risk-number ${level.toLowerCase()}`}>{score}</span><Badge>{level}</Badge></div>; }
+export function RiskBadge({ score, level }: { score: number | null; level: string }) { return <div className="risk-badge"><span className={`risk-number ${level.toLowerCase()}`}>{score ?? '—'}</span><Badge>{level}</Badge></div>; }
 export function PageHeading({ eyebrow, title, description, children }: { eyebrow?: string; title: string; description: string; children?: ReactNode }) { return <div className="page-heading"><div>{eyebrow && <p className="eyebrow">{eyebrow}</p>}<h1>{title}</h1><p className="muted">{description}</p></div><div className="heading-actions">{children}</div></div>; }
 export function StatCard({ label, value, foot, icon: Icon, color = 'teal' }: { label: string; value: number | string; foot: string; icon: ComponentType<{ size?: number }>; color?: string }) { return <div className="stat-card"><div className="stat-top"><span>{label}</span><span className={`stat-icon ${color}`}><Icon size={19}/></span></div><strong>{value}</strong><small><ArrowUpRight size={13}/>{foot}</small></div>; }
 export function Empty({ title = 'Nothing here just yet', message = 'Try changing your filters, or check back later.', children }: { title?: string; message?: string; children?: ReactNode }) { return <div className="empty"><div className="empty-icon"><PackageSearch size={30}/></div><h3>{title}</h3><p>{message}</p>{children}</div>; }
@@ -13,8 +14,10 @@ export function ErrorState({ message, retry }: { message: string; retry?: () => 
 export function Spinner() { return <LoaderCircle size={17} className="spin"/>; }
 export function useAsync<T>(fetcher: () => Promise<T>, deps: unknown[] = []) {
   const [data, setData] = useState<T | null>(null); const [error, setError] = useState(''); const [loading, setLoading] = useState(true); const [version, setVersion] = useState(0);
-  useEffect(() => { let active = true; setLoading(true); setError(''); fetcher().then(d => { if (active) setData(d); }).catch(e => { if (active) setError(e.message); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [...deps, version]);
+  useEffect(() => { setLoading(true); }, deps);
+  useEffect(() => { let active = true; setError(''); fetcher().then(d => { if (active) setData(d); }).catch(e => { if (active) setError(e.message); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [...deps, version]);
   const reload = useCallback(() => setVersion(v => v + 1), []);
+  useEffect(() => subscribeStore(reload), [reload]);
   return { data, error, loading, reload, setData };
 }
 const ToastContext = createContext<(message: string) => void>(() => {});
